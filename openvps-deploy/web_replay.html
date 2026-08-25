@@ -723,22 +723,46 @@
     }
 
     function drawDetections(dets) {
+      // Crosshair di tengah
+      const cx = stageCanvas.width / 2, cy = stageCanvas.height / 2;
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - 22, cy); ctx.lineTo(cx + 22, cy);
+      ctx.moveTo(cx, cy - 22); ctx.lineTo(cx, cy + 22);
+      ctx.stroke();
+
+      // Daftar objek di pojok kiri atas
+      if (dets.length > 0) {
+        ctx.fillStyle = 'rgba(22, 25, 34, 0.75)';
+        ctx.fillRect(8, 42, 220, dets.length * 22 + 10);
+        dets.forEach((d, i) => {
+          ctx.fillStyle = '#10b981';
+          ctx.font = '13px monospace';
+          const conf = d.confidence ? (d.confidence * 100).toFixed(0) : '?';
+          ctx.fillText(`[HIT] ${d.label.padEnd(10).substring(0, 10)} ${conf}%`, 16, 58 + i * 22);
+        });
+      }
+
       dets.forEach(d => {
         const [x1, y1, x2, y2] = d.bbox;
-        // Bounding box
-        ctx.strokeStyle = '#06b6d4';
-        ctx.lineWidth = Math.max(2, stageCanvas.width / 400);
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = Math.max(2, stageCanvas.width / 500);
 
-        // Label background
+        // Tactical bracket corners
+        const L = 16;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1 + L); ctx.lineTo(x1, y1); ctx.lineTo(x1 + L, y1);
+        ctx.moveTo(x2 - L, y1); ctx.lineTo(x2, y1); ctx.lineTo(x2, y1 + L);
+        ctx.moveTo(x2, y2 - L); ctx.lineTo(x2, y2); ctx.lineTo(x2 - L, y2);
+        ctx.moveTo(x1 + L, y2); ctx.lineTo(x1, y2); ctx.lineTo(x1, y2 - L);
+        ctx.stroke();
+
+        // Label
         const label = `${d.label} ${(d.confidence * 100).toFixed(0)}%`;
-        ctx.font = `bold ${Math.max(12, stageCanvas.width / 60)}px Inter, sans-serif`;
-        const tw = ctx.measureText(label).width;
-        const lh = Math.max(18, stageCanvas.width / 40);
-        ctx.fillStyle = 'rgba(6,182,212,0.75)';
-        ctx.fillRect(x1, y1 - lh, tw + 12, lh);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(label, x1 + 6, y1 - 4);
+        ctx.font = `bold ${Math.max(12, stageCanvas.width / 60)}px monospace`;
+        ctx.fillStyle = '#22d3ee';
+        ctx.fillText(label, x1 + 4, Math.max(14, y1 - 6));
       });
     }
 

@@ -30,7 +30,7 @@
     }
 
     .wrap {
-      max-width: 900px;
+      max-width: 95%;
       margin: 0 auto;
     }
 
@@ -56,10 +56,11 @@
     .video-box {
       position: relative;
       width: 100%;
-      aspect-ratio: 4/3;
+      aspect-ratio: 16/9;
       background: #000;
       border-radius: 10px;
       overflow: hidden;
+      border: 1px solid #23283a;
     }
 
     video,
@@ -295,19 +296,16 @@
 
 <body>
   <div class="wrap">
-    <h1>📷 OpenVPS — Pengambil Foto untuk Pemetaan</h1>
-    <p class="sub">Ambil 10–20 foto ruangan/objek dari sudut berbeda (overlap 60–80%), lalu kirim ke server OpenVPS
-      untuk dibuatkan peta 3D (Modul 02 COLMAP).</p>
+    <h1>📷 OpenVPS — Visual Positioning System</h1>
+    <p class="sub">Ambil foto ruangan/objek untuk pemetaan 3D, atau nyalakan deteksi objek dan rekam sesi.</p>
 
     <!-- KONFIGURASI SERVER -->
     <div class="card">
-      <label for="serverUrl">Alamat Server OpenVPS (Modul 04)</label>
+      <label for="serverUrl">Alamat Server OpenVPS</label>
       <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="https://vps-kamu.example.com">
-      <label for="apiKey">API Key (isi kalau server production pakai OPENVPS_API_KEY)</label>
+      <label for="apiKey">API Key</label>
       <input type="text" id="apiKey" placeholder="X-API-Key">
-      <div class="progress-tips">Ganti dengan alamat VPS setelah dideploy (lihat <span
-          class="badge">docs/deploy_to_vps.md</span>). Untuk tes lokal, jalankan
-        <code>uvicorn server:app --host 0.0.0.0 --port 8000</code> lalu pakai <code>http://localhost:8000</code>.</div>
+      <div class="progress-tips">Sesuaikan alamat jika dideploy via production.</div>
     </div>
 
     <!-- KAMERA -->
@@ -366,9 +364,8 @@
 
     <!-- TES LOCALIZE LANGSUNG -->
     <div class="card">
-      <h3>🧭 Tes Localize Langsung (Modul 04 relocalize)</h3>
-      <p class="progress-tips">Setelah server punya peta (hasil Modul 02+03), coba snap 1 foto di sini untuk lihat hasil
-        localization real-time dari browser.</p>
+      <h3>🧭 Tes Localize Langsung</h3>
+      <p class="progress-tips">Snap foto dan lihat hasil posisi real-time dari server.</p>
       <div class="controls">
         <button class="btn-secondary" id="testLocalizeBtn" disabled>📍 Snap &amp; Localize</button>
       </div>
@@ -587,7 +584,7 @@
       a.href = URL.createObjectURL(blob);
       a.download = 'openvps_photos.zip';
       a.click();
-      setStatus("✅ ZIP terunduh - pakai folder hasil ekstraknya sebagai --images di Modul 02.", 'ok');
+      setStatus("✅ ZIP terunduh - upload ke server atau ekstrak untuk pemetaan lokal.", 'ok');
     }
 
     async function testLocalize() {
@@ -714,17 +711,52 @@
 
     function drawBoxes(dets) {
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+      // Draw crosshair di tengah
+      const cx = overlay.width / 2;
+      const cy = overlay.height / 2;
+      overlayCtx.strokeStyle = 'rgba(94, 234, 212, 0.4)';
+      overlayCtx.lineWidth = 1.5;
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(cx - 20, cy); overlayCtx.lineTo(cx + 20, cy);
+      overlayCtx.moveTo(cx, cy - 20); overlayCtx.lineTo(cx, cy + 20);
+      overlayCtx.stroke();
+
+      // Draw list di pojok kiri atas 
+      if (dets && dets.length > 0) {
+        overlayCtx.fillStyle = 'rgba(21, 24, 33, 0.75)';
+        overlayCtx.fillRect(10, 45, 200, dets.length * 20 + 10);
+
+        dets.forEach((d, i) => {
+          overlayCtx.fillStyle = '#4ade80'; // hijau ok
+          overlayCtx.font = '12px monospace';
+          overlayCtx.fillText(`[HIT] ${d.label.padEnd(10).substring(0, 10)} - ${(d.conf * 100).toFixed(0)}%`, 18, 62 + (i * 20));
+        });
+      }
+
       if (!dets) return;
-      overlayCtx.lineWidth = Math.max(2, overlay.width / 400);
-      overlayCtx.font = `${Math.max(14, overlay.width / 45)}px sans-serif`;
+
+      overlayCtx.lineWidth = Math.max(2, overlay.width / 500);
       dets.forEach(d => {
         const [x1, y1, x2, y2] = d.box;
         overlayCtx.strokeStyle = '#5eead4';
-        overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+        // draw corners / tactical brackets instead of full rect
+        const L = 15; // bracket length
+        overlayCtx.beginPath();
+        // Top Left
+        overlayCtx.moveTo(x1, y1 + L); overlayCtx.lineTo(x1, y1); overlayCtx.lineTo(x1 + L, y1);
+        // Top Right
+        overlayCtx.moveTo(x2 - L, y1); overlayCtx.lineTo(x2, y1); overlayCtx.lineTo(x2, y1 + L);
+        // Bottom Right
+        overlayCtx.moveTo(x2, y2 - L); overlayCtx.lineTo(x2, y2); overlayCtx.lineTo(x2 - L, y2);
+        // Bottom Left
+        overlayCtx.moveTo(x1 + L, y2); overlayCtx.lineTo(x1, y2); overlayCtx.lineTo(x1, y2 - L);
+        overlayCtx.stroke();
+
+        // Label minimal di pojok box
         const label = `${d.label} ${(d.conf * 100).toFixed(0)}%`;
-        const w = overlayCtx.measureText(label).width + 10;
-        overlayCtx.fillStyle = 'rgba(6,20,18,0.85)';
-        overlayCtx.fillRect(x1, Math.max(0, y1 - 20), w, 20);
+        overlayCtx.font = `bold ${Math.max(12, overlay.width / 60)}px monospace`;
         overlayCtx.fillStyle = '#5eead4';
         overlayCtx.fillText(label, x1 + 5, Math.max(13, y1 - 5));
       });
