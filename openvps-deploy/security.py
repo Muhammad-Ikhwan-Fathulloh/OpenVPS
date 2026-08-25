@@ -17,7 +17,7 @@ konsisten kalau server discale jadi >1 instance).
 import time
 from collections import defaultdict, deque
 
-from fastapi import Header, HTTPException, Query, WebSocket, WebSocketException, status
+from fastapi import Header, HTTPException, Query, Request, WebSocket, WebSocketException, status
 
 import config
 
@@ -70,7 +70,7 @@ class RateLimiter:
 _limiter = RateLimiter(config.RATE_LIMIT_PER_MIN)
 
 
-def rate_limit(request) -> None:
+def rate_limit(request: Request) -> None:
     """Dependency: panggil dengan `request: Request` lewat Depends() di tiap
     endpoint yang mau dibatasi (biasanya endpoint berat: /detect,
     /relocalize, /recordings)."""
