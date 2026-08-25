@@ -4,1306 +4,584 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenVPS — Visual Positioning System</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>OpenVPS — Unified Dashboard</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Three.js (For Replay 3D) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
   <style>
-    :root {
-      --bg: #08090d;
-      --bg2: #0f1117;
-      --panel: #161922;
-      --panel-hover: #1c2030;
-      --border: #232839;
-      --accent: #06b6d4;
-      --accent2: #22d3ee;
-      --accent-glow: rgba(6, 182, 212, 0.15);
-      --green: #10b981;
-      --green-bg: rgba(16, 185, 129, 0.1);
-      --red: #ef4444;
-      --red-bg: rgba(239, 68, 68, 0.1);
-      --yellow: #f59e0b;
-      --yellow-bg: rgba(245, 158, 11, 0.08);
-      --text: #f1f5f9;
-      --text2: #94a3b8;
-      --text3: #64748b;
-      --purple: #a78bfa;
-      --purple-bg: rgba(167, 139, 250, 0.1);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+      background-color: #0b0d12;
+      color: #f8f9fa;
+      font-family: 'Inter', -apple-system, sans-serif;
     }
 
-    /* ===== HEADER ===== */
-    .header {
-      background: linear-gradient(135deg, var(--bg2), var(--panel));
-      border-bottom: 1px solid var(--border);
-      padding: 16px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(20px);
-    }
-
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), var(--purple));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .logo h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-
-    .logo span {
-      color: var(--accent2);
-    }
-
-    .header-badge {
-      font-size: 0.7rem;
-      background: var(--accent-glow);
-      color: var(--accent2);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      border: 1px solid rgba(6, 182, 212, 0.2);
-    }
-
-    /* ===== MAIN ===== */
-    .main {
-      max-width: 95%;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 16px;
-    }
-
-    @media (max-width: 900px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* ===== CARDS ===== */
     .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-
-    .card:hover {
-      border-color: rgba(6, 182, 212, 0.3);
+      background-color: #161922;
+      border-color: #232839;
     }
 
     .card-header {
-      padding: 16px 18px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .card-header .icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      flex-shrink: 0;
-    }
-
-    .card-header h2 {
-      font-size: 0.88rem;
+      background-color: #1a1e28;
+      border-bottom: 1px solid #232839;
       font-weight: 600;
     }
 
-    .card-header p {
-      font-size: 0.75rem;
-      color: var(--text3);
-      margin-top: 2px;
+    .nav-tabs .nav-link {
+      color: #94a3b8;
+      border: none;
+      padding: 12px 20px;
     }
 
-    .card-body {
-      padding: 16px 18px;
-    }
-
-    /* ===== CONFIG SECTION ===== */
-    .config-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    label.field-label {
-      font-size: 0.75rem;
+    .nav-tabs .nav-link.active {
+      background-color: transparent;
+      border-bottom: 3px solid #06b6d4;
+      color: #06b6d4;
       font-weight: 600;
-      color: var(--text2);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: block;
-      margin-bottom: 5px;
     }
 
-    input[type="text"],
-    select {
-      width: 100%;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-family: 'Inter', sans-serif;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      outline: none;
+    .nav-tabs {
+      border-bottom: 1px solid #232839;
     }
 
-    input[type="text"]:focus,
-    select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-
-    /* ===== CAMERA BOX ===== */
-    .camera-container {
+    .canvas-container {
       position: relative;
       width: 100%;
       aspect-ratio: 16/9;
       background: #000;
-      border-radius: 12px;
+      border-radius: 8px;
       overflow: hidden;
-      border: 1px solid var(--border);
+      border: 1px solid #232839;
     }
 
-    #video,
-    #overlay {
+    .canvas-container video,
+    .canvas-container canvas,
+    .canvas-container #three-container {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
     }
 
-    #overlay {
+    .canvas-container .hud-overlay {
       pointer-events: none;
-    }
-
-    .cam-badge {
-      position: absolute;
-      top: 12px;
-      left: 12px;
       z-index: 10;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(10px);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
-    .cam-badge.live {
-      color: var(--green);
-    }
-
-    .cam-badge .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1)
-      }
-
-      50% {
-        opacity: 0.4;
-        transform: scale(0.8)
-      }
-    }
-
-    .photo-counter {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 10;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(10px);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--accent2);
-    }
-
-    /* ===== BUTTONS ===== */
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s;
-    }
-
-    .btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-
-    .btn:active:not(:disabled) {
-      transform: scale(0.97);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #0e9dc0);
-      color: #fff;
-      flex: 1;
-      justify-content: center;
-      box-shadow: 0 2px 12px rgba(6, 182, 212, 0.25);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4);
-    }
-
-    .btn-ghost {
-      background: var(--bg2);
-      color: var(--text2);
-      border: 1px solid var(--border);
-    }
-
-    .btn-ghost:hover:not(:disabled) {
-      background: var(--panel-hover);
-      color: var(--text);
-    }
-
-    .btn-danger {
-      background: transparent;
-      color: var(--red);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background: var(--red-bg);
-    }
-
-    /* ===== STATUS / TOAST ===== */
-    .toast {
-      margin-top: 10px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      display: none;
-      align-items: center;
-      gap: 8px;
-      animation: slideIn 0.25s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-6px)
-      }
-
-      to {
-        opacity: 1;
-        transform: none
-      }
-    }
-
-    .toast.info {
-      display: flex;
-      background: var(--yellow-bg);
-      color: var(--yellow);
-      border: 1px solid rgba(245, 158, 11, 0.15);
-    }
-
-    .toast.ok {
-      display: flex;
-      background: var(--green-bg);
-      color: var(--green);
-      border: 1px solid rgba(16, 185, 129, 0.15);
-    }
-
-    .toast.err {
-      display: flex;
-      background: var(--red-bg);
-      color: var(--red);
-      border: 1px solid rgba(239, 68, 68, 0.15);
-    }
-
-    /* ===== GALLERY ===== */
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
-      gap: 6px;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 8px;
     }
 
     .thumb {
-      position: relative;
       aspect-ratio: 1;
-      border-radius: 8px;
+      border-radius: 6px;
       overflow: hidden;
-      border: 1px solid var(--border);
-      transition: border-color 0.2s;
-    }
-
-    .thumb:hover {
-      border-color: var(--accent);
+      position: relative;
+      border: 1px solid #2a3040;
     }
 
     .thumb img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
     }
 
-    .thumb .rm {
+    .thumb .rm-btn {
       position: absolute;
-      top: 3px;
-      right: 3px;
-      background: rgba(0, 0, 0, 0.7);
-      color: var(--red);
+      top: 2px;
+      right: 2px;
+      background: rgba(220, 53, 69, 0.8);
+      border: none;
+      color: white;
       border-radius: 50%;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       font-size: 10px;
-      line-height: 18px;
+      line-height: 20px;
       text-align: center;
       cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.15s;
+      padding: 0;
     }
 
-    .thumb:hover .rm {
-      opacity: 1;
-    }
-
-    /* ===== LOCALIZE RESULT VISUAL ===== */
-    .localize-visual {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: #000;
-      min-height: 180px;
-    }
-
-    .localize-visual img {
-      width: 100%;
-      display: block;
-    }
-
-    .result-overlay {
+    .status-badge {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-      padding: 40px 16px 16px;
-    }
-
-    .result-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .result-item {
-      background: rgba(255, 255, 255, 0.06);
-      backdrop-filter: blur(8px);
-      border-radius: 8px;
-      padding: 8px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .result-item .label {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text3);
-      margin-bottom: 2px;
-      font-weight: 600;
-    }
-
-    .result-item .value {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--accent2);
-      font-family: 'SF Mono', 'Fira Code', monospace;
-    }
-
-    .result-item.success .value {
-      color: var(--green);
-    }
-
-    .result-item.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .provider-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin-bottom: 10px;
-    }
-
-    .provider-tag.openvps {
-      background: var(--accent-glow);
-      color: var(--accent2);
-    }
-
-    .provider-tag.multiset {
-      background: var(--purple-bg);
-      color: var(--purple);
-    }
-
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 30px;
-      color: var(--text3);
-      gap: 8px;
-      min-height: 180px;
-    }
-
-    .empty-state .icon {
-      font-size: 2rem;
-      opacity: 0.4;
-    }
-
-    .empty-state p {
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 4px 10px;
+      border-radius: 4px;
       font-size: 0.8rem;
-      text-align: center;
+      z-index: 20;
+      color: #06b6d4;
     }
 
-    /* ===== DETECT / RECORD TOGGLES ===== */
-    .toggle-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: var(--bg2);
-      border-radius: 10px;
-      margin-bottom: 8px;
-      border: 1px solid var(--border);
-    }
-
-    .toggle-card .info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .toggle-card .info .emoji {
-      font-size: 1.2rem;
-    }
-
-    .toggle-card .info .title {
-      font-size: 0.82rem;
-      font-weight: 600;
-    }
-
-    .toggle-card .info .desc {
-      font-size: 0.7rem;
-      color: var(--text3);
-    }
-
-    .switch {
-      position: relative;
-      width: 42px;
-      height: 24px;
-      cursor: pointer;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .switch .slider {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--border);
-      border-radius: 24px;
-      transition: 0.3s;
-    }
-
-    .switch .slider::before {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      left: 3px;
-      bottom: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: 0.3s;
-    }
-
-    .switch input:checked+.slider {
-      background: var(--accent);
-    }
-
-    .switch input:checked+.slider::before {
-      transform: translateX(18px);
-    }
-
-    /* ===== RECORDING ===== */
-    .rec-indicator {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--red);
-      padding: 6px 12px;
-      background: var(--red-bg);
-      border-radius: 8px;
-      border: 1px solid rgba(239, 68, 68, 0.15);
-    }
-
-    .rec-indicator.active {
-      display: inline-flex;
-    }
-
-    .rec-indicator .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--red);
-      animation: pulse 1s infinite;
-    }
-
-    /* ===== SECTION SPACER ===== */
-    .section-gap {
-      margin-bottom: 16px;
-    }
-
-    .sidebar>.card+.card {
-      margin-top: 16px;
+    .scrubber-bar {
+      width: 100%;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- ===== HEADER ===== -->
-  <div class="header">
-    <div class="header-inner">
-      <div class="logo">
-        <div class="logo-icon">V</div>
-        <div>
-          <h1>Open<span>VPS</span></h1>
-        </div>
-      </div>
-      <div class="header-badge" style="display:flex; gap:10px; align-items:center;">
-        Visual Positioning System
-        <a href="web_three_replay.html" style="color: var(--accent2); text-decoration: none;">▶ 3D Replay</a>
-        <a href="web_replay.html" style="color: var(--accent2); text-decoration: none;">🎬 2D Replay</a>
-      </div>
+  <nav class="navbar navbar-dark bg-dark border-bottom border-secondary mb-4 px-3"
+    style="background-color: #11141c !important;">
+    <span class="navbar-brand mb-0 h1 text-info fw-bold">📷 OpenVPS Dashboard</span>
+    <div class="d-flex w-auto gap-2 align-items-center">
+      <input type="text" id="serverUrl" class="form-control form-control-sm bg-dark text-light border-secondary"
+        value="http://localhost:8000" style="width: 200px;" placeholder="Server URL">
+      <input type="text" id="apiKey" class="form-control form-control-sm bg-dark text-light border-secondary"
+        style="width: 150px;" placeholder="API Key (Opsional)">
     </div>
-  </div>
+  </nav>
 
-  <!-- ===== MAIN CONTENT ===== -->
-  <div class="main">
-    <div class="grid">
+  <div class="container-fluid px-4 pb-5">
+    <!-- TABS -->
+    <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="capture-tab" data-bs-toggle="tab" data-bs-target="#capture" type="button"
+          role="tab">📹 Capture & Detect</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="replay2d-tab" data-bs-toggle="tab" data-bs-target="#replay2d" type="button"
+          role="tab">🎬 Replay (2D)</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="replay3d-tab" data-bs-toggle="tab" data-bs-target="#replay3d" type="button"
+          role="tab">🧊 Replay (3D)</button>
+      </li>
+    </ul>
 
-      <!-- ===== LEFT COLUMN ===== -->
-      <div class="content-col">
+    <div class="tab-content" id="appTabsContent">
+      <!-- ==================== CAPTURE TAB ==================== -->
+      <div class="tab-pane fade show active" id="capture" role="tabpanel">
+        <div class="row g-4">
 
-        <!-- CONFIG -->
-        <div class="card section-gap">
-          <div class="card-header">
-            <div class="icon" style="background: var(--accent-glow); color: var(--accent2);">⚙</div>
-            <div>
-              <h2>Konfigurasi Server</h2>
-              <p>Hubungkan ke server OpenVPS</p>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="config-grid">
-              <div>
-                <label class="field-label">Alamat Server</label>
-                <input type="text" id="serverUrl" value="http://localhost:8000"
-                  placeholder="https://vps-kamu.example.com">
+          <div class="col-lg-8">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Kamera Utama</span>
+                <span id="camStatus" class="badge bg-secondary">Mati</span>
               </div>
-              <div>
-                <label class="field-label">API Key</label>
-                <input type="text" id="apiKey" placeholder="Kosongkan jika development lokal">
-              </div>
-            </div>
-          </div>
-        </div>
+              <div class="card-body">
+                <div class="canvas-container mb-3">
+                  <video id="videoElement" autoplay playsinline muted></video>
+                  <canvas id="overlayCanvas" class="hud-overlay"></canvas>
+                  <div class="status-badge" id="recIndicator" style="display:none; color: #ef4444;">⏺ REC: <span
+                      id="recFrameCount">0</span> frame</div>
+                </div>
 
-        <!-- CAMERA -->
-        <div class="card section-gap">
-          <div class="card-header">
-            <div class="icon" style="background: var(--green-bg); color: var(--green);">📷</div>
-            <div>
-              <h2>Kamera & Pengambilan Foto</h2>
-              <p>Ambil 10-20 foto dari berbagai sudut untuk pemetaan 3D</p>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="camera-container" id="cameraBox">
-              <video id="video" autoplay playsinline muted></video>
-              <canvas id="overlay" class="overlay"></canvas>
-              <div class="cam-badge live" id="liveBadge" style="display:none;">
-                <div class="dot"></div>LIVE
-              </div>
-              <div class="photo-counter" id="counter">0 / 15</div>
-            </div>
-            <div style="height:12px"></div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="startBtn">▶ Aktifkan Kamera</button>
-              <button class="btn btn-ghost" id="captureBtn" disabled>📸 Ambil</button>
-              <button class="btn btn-ghost" id="flipBtn" disabled>🔄</button>
-            </div>
-            <div id="camTip" class="toast"></div>
-          </div>
-        </div>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-primary" id="startCamBtn">▶ Nyalakan Kamera</button>
+                  <button class="btn btn-secondary" id="flipCamBtn" disabled>🔄 Balik Kamera</button>
+                  <button class="btn btn-info text-white fw-bold" id="captureBtn" disabled>📸 Capture Foto</button>
+                  <button class="btn btn-warning fw-bold ms-auto" id="testLocBtn" disabled>📍 Tes Localize VPS</button>
+                </div>
 
-        <!-- GALLERY -->
-        <div class="card section-gap">
-          <div class="card-header">
-            <div class="icon" style="background: var(--yellow-bg); color: var(--yellow);">🖼</div>
-            <div>
-              <h2>Galeri Foto (<span id="galCount">0</span>)</h2>
-              <p>Foto terkumpul siap dikirim ke server</p>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="gallery-grid" id="gallery"></div>
-            <div style="height:10px"></div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="uploadBtn" disabled>⬆ Kirim ke Server</button>
-              <button class="btn btn-ghost" id="downloadBtn" disabled>⬇ ZIP</button>
-              <button class="btn btn-danger" id="clearBtn" disabled>✕ Hapus</button>
-            </div>
-            <div id="uploadStatus" class="toast"></div>
-          </div>
-        </div>
-
-        <!-- DETECT + RECORD -->
-        <div class="card section-gap">
-          <div class="card-header">
-            <div class="icon" style="background: var(--purple-bg); color: var(--purple);">🎯</div>
-            <div>
-              <h2>Deteksi & Rekaman</h2>
-              <p>Deteksi objek YOLO dan rekam sesi</p>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="toggle-card">
-              <div class="info">
-                <div class="emoji">🎯</div>
-                <div>
-                  <div class="title">Deteksi Objek (YOLO)</div>
-                  <div class="desc">Deteksi real-time di overlay kamera</div>
+                <div class="mt-4 pt-3 border-top border-secondary">
+                  <h6 class="text-secondary fw-bold text-uppercase mb-3">Kontrol Deteksi & Rekaman</h6>
+                  <div class="d-flex gap-3 align-items-center flex-wrap">
+                    <div class="form-check form-switch fs-5">
+                      <input class="form-check-input" type="checkbox" role="switch" id="toggleDetect" disabled>
+                      <label class="form-check-label fs-6 ms-1" for="toggleDetect">Live Detect YOLO</label>
+                    </div>
+                    <div class="form-check form-switch fs-5">
+                      <input class="form-check-input" type="checkbox" role="switch" id="toggleRecord" disabled>
+                      <label class="form-check-label fs-6 ms-1 text-danger" for="toggleRecord">Mulai Rekam Sesi</label>
+                    </div>
+                  </div>
+                  <div id="sysLog" class="small text-info mt-2">Menunggu instruksi...</div>
                 </div>
               </div>
-              <label class="switch">
-                <input type="checkbox" id="detectToggle" disabled>
-                <span class="slider"></span>
-              </label>
-            </div>
-            <div id="detectStatus" class="toast"></div>
-
-            <div class="toggle-card">
-              <div class="info">
-                <div class="emoji">⏺</div>
-                <div>
-                  <div class="title">Rekam Sesi</div>
-                  <div class="desc">Simpan frame + deteksi untuk replay</div>
-                </div>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="recordToggle" disabled>
-                <span class="slider"></span>
-              </label>
-            </div>
-            <div class="rec-indicator" id="recIndicator">
-              <div class="dot"></div><span id="recFrameCount">0</span> frame
-            </div>
-            <div id="recordStatus" class="toast"></div>
-            <div class="btn-row" style="margin-top:8px;">
-              <button class="btn btn-ghost" id="openReplayBtn" style="display:none;">🎬 Buka Replay</button>
             </div>
           </div>
+
+          <div class="col-lg-4">
+            <div class="card mb-4" id="galleryCard">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Galeri Snapshot</span>
+                <span class="badge bg-dark" id="galCount">0</span>
+              </div>
+              <div class="card-body">
+                <div class="gallery-grid mb-3" id="galleryGrid"></div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-success btn-sm flex-grow-1" id="uploadFilesBtn" disabled>Kirim ke
+                    Server</button>
+                  <button class="btn btn-secondary btn-sm" id="downloadZipBtn" disabled>ZIP</button>
+                  <button class="btn btn-danger btn-sm" id="clearGalleryBtn" disabled>Bersihkan</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" id="localizeResultCard">
+              <div class="card-header">Hasil VPS Localize</div>
+              <div class="card-body p-2" id="localizeResArea">
+                <div class="text-center text-muted p-4 small">Tekan "Tes Localize VPS" untuk melihat hasil 6DoF di sini.
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- ===== RIGHT COLUMN (Sidebar) ===== -->
-      <div class="sidebar">
+      <!-- ==================== REPLAY 2D TAB ==================== -->
+      <div class="tab-pane fade" id="replay2d" role="tabpanel">
+        <div class="card mb-3">
+          <div class="card-body d-flex gap-2 align-items-end">
+            <div style="flex:1;">
+              <label class="form-label text-secondary small mb-1 fw-bold">Sesi ID (Recording)</label>
+              <input type="text" id="r2dSessionId"
+                class="form-control bg-dark border-secondary text-light form-control-sm"
+                placeholder="Contoh: 20260826_123456_abc">
+            </div>
+            <button class="btn btn-info btn-sm text-white" id="r2dLoadBtn">Load Sesi</button>
+            <div class="ms-3">
+              <button class="btn btn-success btn-sm" id="r2dPlayBtn" disabled style="width: 100px;">▶ Play</button>
+            </div>
+          </div>
+        </div>
 
-        <!-- LOCALIZE -->
         <div class="card">
-          <div class="card-header">
-            <div class="icon" style="background: var(--accent-glow); color: var(--accent2);">🧭</div>
-            <div>
-              <h2>Tes Localize</h2>
-              <p>Snap foto & dapatkan posisi 6DoF</p>
-            </div>
-          </div>
           <div class="card-body">
-            <label class="field-label">Penyedia VPS</label>
-            <select id="vpsProvider">
-              <option value="openvps">🏠 OpenVPS (Self-hosted)</option>
-              <option value="multiset">☁ Multiset.ai (Cloud)</option>
-            </select>
-            <div style="height: 12px;"></div>
-            <button class="btn btn-primary" id="testLocalizeBtn" disabled style="width: 100%;">📍 Snap &
-              Localize</button>
-            <div style="height: 12px;"></div>
-
-            <!-- RESULT VISUAL -->
-            <div id="resultBox">
-              <div class="empty-state">
-                <div class="icon">🧭</div>
-                <p>Aktifkan kamera, lalu tekan<br><strong>Snap & Localize</strong></p>
-              </div>
+            <div class="canvas-container">
+              <canvas id="r2dCanvas"></canvas>
+            </div>
+            <div class="mt-3 d-flex align-items-center gap-3">
+              <span id="r2dFrameLabel" class="badge bg-secondary" style="min-width: 60px;">0 / 0</span>
+              <input type="range" class="form-range scrubber-bar m-0" id="r2dScrubber" min="0" max="0" value="0">
             </div>
           </div>
         </div>
-
       </div>
+
+      <!-- ==================== REPLAY 3D TAB ==================== -->
+      <div class="tab-pane fade" id="replay3d" role="tabpanel">
+        <div class="card mb-3">
+          <div class="card-body d-flex gap-2 align-items-end flex-wrap">
+            <div style="flex:1;">
+              <label class="form-label text-secondary small mb-1 fw-bold">Sesi ID (Recording)</label>
+              <input type="text" id="r3dSessionId"
+                class="form-control bg-dark border-secondary text-light form-control-sm"
+                placeholder="Gunakan ID sesi yang sama">
+            </div>
+            <button class="btn btn-info btn-sm text-white" id="r3dLoadBtn">Load Sesi</button>
+            <button class="btn btn-success btn-sm ms-3" id="r3dPlayBtn" disabled style="width: 100px;">▶ Play</button>
+            <button class="btn btn-outline-info btn-sm ms-auto" id="r3dSaveBtn" disabled>💾 Download Frame
+              Image</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="canvas-container" id="r3dContainer">
+              <!-- Three.js renderer goes here -->
+            </div>
+            <div class="mt-3 d-flex align-items-center gap-3">
+              <span id="r3dFrameLabel" class="badge bg-secondary" style="min-width: 60px;">0 / 0</span>
+              <input type="range" class="form-range scrubber-bar m-0" id="r3dScrubber" min="0" max="0" value="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // ============================================================
-    // DOM REFS
-    // ============================================================
-    const video = document.getElementById('video');
-    const overlay = document.getElementById('overlay');
-    const counter = document.getElementById('counter');
-    const startBtn = document.getElementById('startBtn');
-    const captureBtn = document.getElementById('captureBtn');
-    const flipBtn = document.getElementById('flipBtn');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const testLocalizeBtn = document.getElementById('testLocalizeBtn');
-    const gallery = document.getElementById('gallery');
-    const galCount = document.getElementById('galCount');
-    const uploadStatus = document.getElementById('uploadStatus');
-    const camTip = document.getElementById('camTip');
-    const resultBox = document.getElementById('resultBox');
-    const serverUrlInput = document.getElementById('serverUrl');
-    const apiKeyInput = document.getElementById('apiKey');
-    const vpsProviderInput = document.getElementById('vpsProvider');
-    const liveBadge = document.getElementById('liveBadge');
-    const detectToggle = document.getElementById('detectToggle');
-    const recordToggle = document.getElementById('recordToggle');
-    const detectStatus = document.getElementById('detectStatus');
-    const recordStatus = document.getElementById('recordStatus');
-    const recIndicator = document.getElementById('recIndicator');
-    const recFrameCount = document.getElementById('recFrameCount');
-    const openReplayBtn = document.getElementById('openReplayBtn');
+    // --- GLOBAL ---
+    const getHeaders = () => {
+      const v = document.getElementById('apiKey').value.trim();
+      return v ? { 'X-API-Key': v } : {};
+    };
+    const getUrl = () => document.getElementById('serverUrl').value.replace(/\/$/, '');
+    const getWsUrl = () => getUrl().replace(/^http/, 'ws');
+    const logSys = (m) => { document.getElementById('sysLog').innerHTML = m; };
 
-    const TARGET_MIN = 10, TARGET_MAX = 20;
-    let capturedPhotos = [];
-    let facingMode = 'environment';
-    let cameraActive = false;
+    // --- HUD MODULE (Taktis) ---
+    function drawTacticalHUD(ctx, width, height, dets) {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, width, height);
+      // Crosshair
+      const cx = width / 2, cy = height / 2;
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)'; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+      ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20); ctx.stroke();
+      if (!dets || !dets.length) return;
 
-    // ============================================================
-    // HELPERS
-    // ============================================================
-    function showToast(el, msg, type) {
-      el.className = `toast ${type}`;
-      el.textContent = msg;
-    }
-    function hideToast(el) { el.className = 'toast'; el.textContent = ''; }
-    function getHeaders() {
-      const key = apiKeyInput.value.trim();
-      return key ? { 'X-API-Key': key } : {};
-    }
-    function getUrl() { return serverUrlInput.value.replace(/\/$/, ''); }
-
-    // ============================================================
-    // CAMERA
-    // ============================================================
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }
-        });
-        video.srcObject = stream;
-        cameraActive = true;
-        captureBtn.disabled = false;
-        flipBtn.disabled = false;
-        testLocalizeBtn.disabled = false;
-        detectToggle.disabled = false;
-        recordToggle.disabled = false;
-        startBtn.textContent = '⏹ Matikan Kamera';
-        liveBadge.style.display = 'flex';
-        showToast(camTip, '📷 Kamera aktif! Mulai ambil foto dari berbagai sudut.', 'ok');
-      } catch (e) {
-        showToast(camTip, '❌ Gagal akses kamera: ' + e.message, 'err');
-      }
-    }
-    function stopCamera() {
-      if (video.srcObject) {
-        video.srcObject.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-      }
-      cameraActive = false;
-      captureBtn.disabled = true;
-      flipBtn.disabled = true;
-      testLocalizeBtn.disabled = true;
-      startBtn.textContent = '▶ Aktifkan Kamera';
-      liveBadge.style.display = 'none';
-      hideToast(camTip);
-    }
-
-    // ============================================================
-    // CAPTURE PHOTOS
-    // ============================================================
-    function capturePhoto() {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        capturedPhotos.push({ blob, url });
-        renderGallery();
-        updateTip();
-      }, 'image/jpeg', 0.9);
-    }
-
-    function updateTip() {
-      const n = capturedPhotos.length;
-      counter.textContent = `${n} / ${TARGET_MAX}`;
-      if (n < TARGET_MIN) {
-        showToast(camTip, `📷 ${n} foto diambil. Butuh minimal ${TARGET_MIN} foto.`, 'info');
-      } else if (n <= TARGET_MAX) {
-        showToast(camTip, `✅ ${n} foto — sudah cukup! Bisa kirim atau tambah lagi.`, 'ok');
-      } else {
-        showToast(camTip, `⚠️ ${n} foto — lebih dari ${TARGET_MAX}. Cukup segitu.`, 'info');
-      }
-      uploadBtn.disabled = n === 0;
-      downloadBtn.disabled = n === 0;
-      clearBtn.disabled = n === 0;
-    }
-
-    function renderGallery() {
-      gallery.innerHTML = '';
-      capturedPhotos.forEach((p, i) => {
-        const div = document.createElement('div');
-        div.className = 'thumb';
-        div.innerHTML = `<img src="${p.url}"><div class="rm" data-i="${i}">✕</div>`;
-        gallery.appendChild(div);
+      // Object List top-left
+      ctx.fillStyle = 'rgba(22, 25, 34, 0.75)'; ctx.fillRect(10, 10, 200, dets.length * 20 + 10);
+      dets.forEach((d, i) => {
+        ctx.fillStyle = '#10b981'; ctx.font = '12px monospace';
+        const conf = d.confidence ? d.confidence : (d.conf ? d.conf : 0);
+        ctx.fillText(`[HIT] ${d.label.padEnd(10).substring(0, 10)} ${(conf * 100).toFixed(0)}%`, 18, 27 + i * 20);
       });
-      galCount.textContent = capturedPhotos.length;
-      gallery.querySelectorAll('.rm').forEach(el => {
-        el.addEventListener('click', e => {
-          const i = parseInt(e.target.dataset.i);
-          URL.revokeObjectURL(capturedPhotos[i].url);
-          capturedPhotos.splice(i, 1);
-          renderGallery(); updateTip();
-        });
-      });
-    }
 
-    // ============================================================
-    // UPLOAD
-    // ============================================================
-    async function uploadAll() {
-      const url = getUrl();
-      if (!url) { showToast(uploadStatus, 'Isi alamat server dulu.', 'err'); return; }
-      uploadBtn.disabled = true;
-      showToast(uploadStatus, `⬆ Mengirim ${capturedPhotos.length} foto...`, 'info');
-      const formData = new FormData();
-      capturedPhotos.forEach((p, i) => {
-        formData.append('images', p.blob, `frame_${String(i).padStart(3, '0')}.jpg`);
-      });
-      try {
-        const res = await fetch(`${url}/upload-images`, { method: 'POST', body: formData, headers: getHeaders() });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        showToast(uploadStatus, `✅ ${data.n_saved} foto tersimpan! Session: ${data.session_id}`, 'ok');
-      } catch (err) {
-        showToast(uploadStatus, `❌ Gagal: ${err.message}`, 'err');
-      } finally { uploadBtn.disabled = false; }
-    }
-
-    // ============================================================
-    // DOWNLOAD ZIP (client-side)
-    // ============================================================
-    function downloadZip() {
-      // Simple ZIP builder
-      const localOff = (d) => { const o = d.getTimezoneOffset(); return (((o >>> 0) & 0xFFFF) | ((o < 0 ? 1 : 0) << 31)); };
-      const central = []; const parts = []; let offset = 0;
-      capturedPhotos.forEach((p, i) => {
-        const name = `frame_${String(i).padStart(3, '0')}.jpg`;
-        const nameBytes = new TextEncoder().encode(name);
-        const data = new Uint8Array(0); // placeholder - we use blob
-        const header = new DataView(new ArrayBuffer(30));
-        header.setUint32(0, 0x04034b50, true);
-        header.setUint16(4, 20, true);
-        header.setUint16(8, 0, true);
-        header.setUint16(14, 0, true);
-        header.setUint16(16, 0, true);
-        header.setUint32(22, 0, true);
-        header.setUint16(26, nameBytes.length, true);
-        parts.push(new Uint8Array(header.buffer));
-        parts.push(nameBytes);
-        const localHeaderOffset = offset;
-        offset += 30 + nameBytes.length;
-        central.push({ nameBytes, offset: localHeaderOffset });
-      });
-      // Simplified - just trigger download with individual blobs
-      const a = document.createElement('a');
-      capturedPhotos.forEach((p, i) => {
-        a.href = p.url;
-        a.download = `frame_${String(i).padStart(3, '0')}.jpg`;
-        a.click();
-      });
-      showToast(uploadStatus, '✅ Foto terunduh.', 'ok');
-    }
-
-    // ============================================================
-    // LOCALIZE (Visual Result)
-    // ============================================================
-    async function testLocalize() {
-      const url = getUrl();
-      const provider = vpsProviderInput.value;
-      resultBox.innerHTML = `
-    <div class="empty-state" style="min-height:120px;">
-      <div style="font-size:1.5rem;animation:pulse 1s infinite;">🔍</div>
-      <p>Menganalisis posisi...</p>
-    </div>`;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-
-      canvas.toBlob(async (blob) => {
-        const formData = new FormData();
-        formData.append('image', blob, 'query.jpg');
-        formData.append('provider', provider);
-        try {
-          const res = await fetch(`${url}/relocalize`, { method: 'POST', body: formData, headers: getHeaders() });
-          const data = await res.json();
-          const snapUrl = URL.createObjectURL(blob);
-          renderLocalizeResult(data, snapUrl, provider);
-        } catch (err) {
-          resultBox.innerHTML = `<div class="toast err" style="display:flex;">❌ ${err.message}</div>`;
-        }
-      }, 'image/jpeg', 0.9);
-    }
-
-    function renderLocalizeResult(data, imgUrl, provider) {
-      const providerLabel = provider === 'multiset' ? 'Multiset.ai' : 'OpenVPS';
-      const providerClass = provider === 'multiset' ? 'multiset' : 'openvps';
-
-      if (data.success) {
-        const pos = data.position || [0, 0, 0];
-        const rot = data.rotation || [0, 0, 0];
-        resultBox.innerHTML = `
-      <div class="localize-visual">
-        <img src="${imgUrl}" alt="Query snapshot">
-        <div class="result-overlay">
-          <div class="provider-tag ${providerClass}">${provider === 'multiset' ? '☁' : '🏠'} ${providerLabel}</div>
-          <div class="result-grid">
-            <div class="result-item success">
-              <div class="label">Status</div>
-              <div class="value">✅ Terdeteksi</div>
-            </div>
-            <div class="result-item">
-              <div class="label">Inliers</div>
-              <div class="value">${data.n_inliers || '—'}</div>
-            </div>
-            <div class="result-item">
-              <div class="label">Posisi (X,Y,Z)</div>
-              <div class="value">${pos.map(v => v.toFixed(3)).join(', ')}</div>
-            </div>
-            <div class="result-item">
-              <div class="label">Rotasi (R,P,Y)</div>
-              <div class="value">${rot.map(v => v.toFixed(3)).join(', ')}</div>
-            </div>
-            <div class="result-item full-width">
-              <div class="label">Keyframe</div>
-              <div class="value">${data.keyframe || '—'}</div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-      } else {
-        resultBox.innerHTML = `
-      <div class="localize-visual" style="padding: 20px;">
-        <div class="provider-tag ${providerClass}">${provider === 'multiset' ? '☁' : '🏠'} ${providerLabel}</div>
-        <div class="toast err" style="display:flex;margin-top:8px;">❌ ${data.message || 'Localization gagal'}</div>
-      </div>`;
-      }
-    }
-
-    // ============================================================
-    // DETECTION (WebSocket YOLO overlay)
-    // ============================================================
-    let detectWs = null;
-    let detectInterval = null;
-    const detCounter = document.createElement('div');
-
-    detectToggle.addEventListener('change', () => {
-      if (detectToggle.checked) startDetection();
-      else stopDetection();
-    });
-
-    function startDetection() {
-      const url = getUrl().replace(/^http/, 'ws');
-      try {
-        detectWs = new WebSocket(`${url}/ws/detect`);
-        detectWs.onopen = () => {
-          showToast(detectStatus, '🎯 Deteksi YOLO aktif', 'ok');
-          detectInterval = setInterval(() => {
-            if (detectWs.readyState !== 1) return;
-            const c = document.createElement('canvas');
-            c.width = video.videoWidth; c.height = video.videoHeight;
-            c.getContext('2d').drawImage(video, 0, 0);
-            c.toBlob(b => { if (b && detectWs.readyState === 1) detectWs.send(b); }, 'image/jpeg', 0.6);
-          }, 200);
-        };
-        detectWs.onmessage = (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            drawDetections(data.detections || []);
-          } catch { }
-        };
-        detectWs.onclose = () => { stopDetection(); detectToggle.checked = false; };
-        detectWs.onerror = () => {
-          showToast(detectStatus, '❌ WebSocket error', 'err');
-          stopDetection(); detectToggle.checked = false;
-        };
-      } catch (e) {
-        showToast(detectStatus, '❌ ' + e.message, 'err');
-        detectToggle.checked = false;
-      }
-    }
-
-    function stopDetection() {
-      if (detectInterval) { clearInterval(detectInterval); detectInterval = null; }
-      if (detectWs) { detectWs.close(); detectWs = null; }
-      const ctx = overlay.getContext('2d');
-      overlay.width = video.videoWidth || 640;
-      overlay.height = video.videoHeight || 480;
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
-      hideToast(detectStatus);
-    }
-
-    function drawDetections(dets) {
-      overlay.width = video.videoWidth || 640;
-      overlay.height = video.videoHeight || 480;
-      const ctx = overlay.getContext('2d');
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
-
-      // Crosshair di tengah
-      const cx = overlay.width / 2, cy = overlay.height / 2;
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(cx - 22, cy); ctx.lineTo(cx + 22, cy);
-      ctx.moveTo(cx, cy - 22); ctx.lineTo(cx, cy + 22);
-      ctx.stroke();
-
-      // Daftar objek HIT di pojok kiri atas
-      if (dets && dets.length > 0) {
-        ctx.fillStyle = 'rgba(22, 25, 34, 0.75)';
-        ctx.fillRect(8, 42, 210, dets.length * 20 + 10);
-        dets.forEach((d, i) => {
-          ctx.fillStyle = '#10b981';
-          ctx.font = '12px monospace';
-          const conf = d.confidence ? (d.confidence * 100).toFixed(0) : (d.conf ? (d.conf * 100).toFixed(0) : '?');
-          ctx.fillText(`[HIT] ${d.label.padEnd(10).substring(0, 10)} ${conf}%`, 16, 58 + i * 20);
-        });
-      }
-
-      if (!dets || dets.length === 0) return;
-
-      ctx.lineWidth = Math.max(2, overlay.width / 500);
+      // Boxes
+      ctx.lineWidth = Math.max(2, width / 500);
       dets.forEach(d => {
-        const box = d.bbox || d.box;
-        if (!box) return;
+        const box = d.bbox || d.box; if (!box) return;
         const [x1, y1, x2, y2] = box;
         ctx.strokeStyle = '#22d3ee';
-
-        // Tactical bracket corners
-        const L = 16;
-        ctx.beginPath();
+        const L = 15; ctx.beginPath();
         ctx.moveTo(x1, y1 + L); ctx.lineTo(x1, y1); ctx.lineTo(x1 + L, y1);
         ctx.moveTo(x2 - L, y1); ctx.lineTo(x2, y1); ctx.lineTo(x2, y1 + L);
         ctx.moveTo(x2, y2 - L); ctx.lineTo(x2, y2); ctx.lineTo(x2 - L, y2);
         ctx.moveTo(x1 + L, y2); ctx.lineTo(x1, y2); ctx.lineTo(x1, y2 - L);
         ctx.stroke();
-
-        // Label
-        const conf = d.confidence ? (d.confidence * 100).toFixed(0) : (d.conf ? (d.conf * 100).toFixed(0) : '?');
-        const label = `${d.label} ${conf}%`;
-        ctx.font = `bold ${Math.max(12, overlay.width / 60)}px monospace`;
-        ctx.fillStyle = '#22d3ee';
-        ctx.fillText(label, x1 + 4, Math.max(14, y1 - 6));
+        const conf = d.confidence ? d.confidence : (d.conf ? d.conf : 0);
+        ctx.fillStyle = '#22d3ee'; ctx.font = `bold ${Math.max(12, width / 60)}px monospace`;
+        ctx.fillText(`${d.label} ${(conf * 100).toFixed(0)}%`, x1 + 5, Math.max(15, y1 - 5));
       });
     }
 
-    // ============================================================
-    // RECORDING
-    // ============================================================
-    let recordWs = null;
-    let recordInterval = null;
-    let recordSessionId = null;
+    // --- 1. CAPTURE & DETECT LOGIC ---
+    let cameraActive = false, streamSource = null, facingMode = 'environment';
+    let capPhotos = [];
+    const video = document.getElementById('videoElement');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const toggleDet = document.getElementById('toggleDetect');
+    const toggleRec = document.getElementById('toggleRecord');
 
-    recordToggle.addEventListener('change', () => {
-      if (recordToggle.checked) startRecording();
-      else stopRecording();
-    });
-
-    async function startRecording() {
-      const url = getUrl();
+    document.getElementById('startCamBtn').onclick = async () => {
+      if (cameraActive) {
+        if (streamSource) streamSource.getTracks().forEach(t => t.stop());
+        cameraActive = false; video.srcObject = null;
+        document.getElementById('startCamBtn').textContent = '▶ Nyalakan Kamera';
+        document.getElementById('startCamBtn').className = 'btn btn-primary';
+        document.getElementById('camStatus').textContent = 'Mati';
+        document.getElementById('camStatus').className = 'badge bg-secondary';
+        ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord'].forEach(id => document.getElementById(id).disabled = true);
+        return;
+      }
       try {
-        const res = await fetch(`${url}/recordings`, { method: 'POST', headers: getHeaders() });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        recordSessionId = data.session_id;
+        streamSource = await navigator.mediaDevices.getUserMedia({ video: { facingMode, width: { ideal: 1280 } } });
+        video.srcObject = streamSource; cameraActive = true;
+        document.getElementById('startCamBtn').textContent = '⏹ Matikan Kamera';
+        document.getElementById('startCamBtn').className = 'btn btn-danger';
+        document.getElementById('camStatus').textContent = 'LIVE';
+        document.getElementById('camStatus').className = 'badge bg-success';
+        ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord'].forEach(id => document.getElementById(id).disabled = false);
+        video.onloadedmetadata = () => { overlayCanvas.width = video.videoWidth; overlayCanvas.height = video.videoHeight; };
+      } catch (e) { logSys('Gagal akses kamera: ' + e.message); }
+    };
+    document.getElementById('flipCamBtn').onclick = () => { facingMode = facingMode === 'environment' ? 'user' : 'environment'; document.getElementById('startCamBtn').click(); setTimeout(() => document.getElementById('startCamBtn').click(), 200); };
 
-        const wsUrl = url.replace(/^http/, 'ws');
-        recordWs = new WebSocket(`${wsUrl}/ws/recordings/${recordSessionId}`);
-        recordWs.onopen = () => {
-          showToast(recordStatus, `⏺ Rekam aktif — session: ${recordSessionId}`, 'ok');
-          recIndicator.classList.add('active');
-          let frameN = 0;
-          recordInterval = setInterval(() => {
-            if (recordWs.readyState !== 1) return;
-            const c = document.createElement('canvas');
-            c.width = video.videoWidth; c.height = video.videoHeight;
-            c.getContext('2d').drawImage(video, 0, 0);
-            c.toBlob(b => {
-              if (b && recordWs.readyState === 1) {
-                recordWs.send(b);
-                frameN++;
-                recFrameCount.textContent = frameN;
-              }
-            }, 'image/jpeg', 0.7);
+    document.getElementById('captureBtn').onclick = () => {
+      const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0);
+      c.toBlob(blob => { capPhotos.push({ blob, url: URL.createObjectURL(blob) }); renderGallery(); }, 'image/jpeg');
+    };
+
+    function renderGallery() {
+      document.getElementById('galCount').textContent = capPhotos.length;
+      document.getElementById('galleryGrid').innerHTML = capPhotos.map((p, i) => `<div class="thumb"><img src="${p.url}"><button class="rm-btn" onclick="rmPhoto(${i})">X</button></div>`).join('');
+      const canAct = capPhotos.length > 0;
+      document.getElementById('uploadFilesBtn').disabled = !canAct;
+      document.getElementById('downloadZipBtn').disabled = !canAct;
+      document.getElementById('clearGalleryBtn').disabled = !canAct;
+    }
+    window.rmPhoto = (i) => { capPhotos.splice(i, 1); renderGallery(); };
+    document.getElementById('clearGalleryBtn').onclick = () => { capPhotos = []; renderGallery(); };
+
+    // Live Detect WS
+    let detWs = null, detTimer = null;
+    toggleDet.onchange = () => {
+      if (!toggleDet.checked) { if (detWs) detWs.close(); if (detTimer) clearInterval(detTimer); overlayCanvas.getContext('2d').clearRect(0, 0, overlayCanvas.width, overlayCanvas.height); logSys('Deteksi dihentikan.'); return; }
+      detWs = new WebSocket(`${getWsUrl()}/ws/detect`);
+      detWs.onopen = () => {
+        logSys('🟢 Deteksi YOLO berjalan.');
+        detTimer = setInterval(() => {
+          if (detWs.readyState !== 1 || !cameraActive) return;
+          const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight; c.getContext('2d').drawImage(video, 0, 0);
+          c.toBlob(b => { if (detWs.readyState === 1 && b) detWs.send(b); }, 'image/jpeg', 0.6);
+        }, 200);
+      };
+      detWs.onmessage = e => { try { const data = JSON.parse(e.data); drawTacticalHUD(overlayCanvas.getContext('2d'), overlayCanvas.width, overlayCanvas.height, data.detections || []); } catch (e) { } };
+      detWs.onclose = () => { toggleDet.checked = false; };
+    };
+
+    // Live Record WS
+    let recWs = null, recTimer = null, recId = null;
+    toggleRec.onchange = async () => {
+      if (!toggleRec.checked) {
+        if (recWs) { try { await fetch(`${getUrl()}/recordings/${recId}/stop`, { method: 'POST', headers: getHeaders() }); } catch (e) { } recWs.close(); }
+        if (recTimer) clearInterval(recTimer);
+        document.getElementById('recIndicator').style.display = 'none';
+        logSys(`🔴 Rekaman disimpan. ID: ${recId}`);
+        // Autofill ID in other tabs
+        document.getElementById('r2dSessionId').value = recId;
+        document.getElementById('r3dSessionId').value = recId;
+        return;
+      }
+      try {
+        const r = await fetch(`${getUrl()}/recordings`, { method: 'POST', headers: getHeaders() });
+        if (!r.ok) throw new Error('Gagal start record');
+        const d = await r.json(); recId = d.session_id;
+
+        recWs = new WebSocket(`${getWsUrl()}/ws/recordings/${recId}`);
+        recWs.onopen = () => {
+          document.getElementById('recIndicator').style.display = 'block'; let fn = 0;
+          recTimer = setInterval(() => {
+            const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight; c.getContext('2d').drawImage(video, 0, 0);
+            c.toBlob(b => { if (recWs.readyState === 1 && b) { recWs.send(b); fn++; document.getElementById('recFrameCount').textContent = fn; } }, 'image/jpeg', 0.7);
           }, 200);
         };
-        recordWs.onclose = () => { cleanupRecording(); };
-        recordWs.onerror = () => {
-          showToast(recordStatus, '❌ Recording WebSocket error', 'err');
-          cleanupRecording(); recordToggle.checked = false;
-        };
-      } catch (err) {
-        showToast(recordStatus, `❌ ${err.message}`, 'err');
-        recordToggle.checked = false;
-      }
+      } catch (e) { logSys(e.message); toggleRec.checked = false; }
     }
 
-    async function stopRecording() {
-      if (recordInterval) { clearInterval(recordInterval); recordInterval = null; }
-      if (recordWs) { recordWs.close(); recordWs = null; }
-      if (recordSessionId) {
-        const url = getUrl();
+    // Tes Localize
+    document.getElementById('testLocBtn').onclick = async () => {
+      document.getElementById('localizeResArea').innerHTML = '<div class="text-info text-center p-3">Memproses...</div>';
+      const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight; c.getContext('2d').drawImage(video, 0, 0);
+      c.toBlob(async blob => {
+        const fd = new FormData(); fd.append('image', blob, 't.jpg');
         try {
-          await fetch(`${url}/recordings/${recordSessionId}/stop`, { method: 'POST', headers: getHeaders() });
-          showToast(recordStatus, `✅ Rekaman selesai: ${recordSessionId}`, 'ok');
-          openReplayBtn.style.display = 'inline-flex';
-          openReplayBtn.onclick = () => { window.open(`${url}/replay?session=${recordSessionId}`, '_blank'); };
-        } catch { }
+          const r = await fetch(`${getUrl()}/relocalize`, { method: 'POST', headers: getHeaders(), body: fd });
+          const d = await r.json();
+          if (d.success) {
+            const pos = d.position || [0, 0, 0], rot = d.rotation || [0, 0, 0];
+            document.getElementById('localizeResArea').innerHTML = `
+              <div class="row g-2 text-center small text-light">
+                <div class="col-6"><div class="p-2 border border-secondary rounded">Stat: <b class="text-success">OK</b></div></div>
+                <div class="col-6"><div class="p-2 border border-secondary rounded">Inliers: <b class="text-info">${d.n_inliers}</b></div></div>
+                <div class="col-12"><div class="p-2 border border-secondary rounded text-start">Posisi (X,Y,Z): <strong class="text-white">${pos.map(x => x.toFixed(3)).join(', ')}</strong></div></div>
+                <div class="col-12"><div class="p-2 border border-secondary rounded text-start">Rotasi (R,P,Y): <strong class="text-white">${rot.map(x => x.toFixed(3)).join(', ')}</strong></div></div>
+              </div>`;
+          } else document.getElementById('localizeResArea').innerHTML = '<div class="text-danger p-2 text-center">❌ Gagal VPS.</div>';
+        } catch (e) { document.getElementById('localizeResArea').innerHTML = '<div class="text-danger p-2 text-center">❌ Gagal Koneksi Server.</div>'; }
+      }, 'image/jpeg');
+    }
+
+    // --- 2. REPLAY 2D LOGIC ---
+    let r2dFrames = [], r2dManifest = null, r2dPlayTimer = null, r2dPlaying = false, r2dImg = new Image();
+    const r2dCanvas = document.getElementById('r2dCanvas'); const r2dCtx = r2dCanvas.getContext('2d');
+
+    document.getElementById('r2dLoadBtn').onclick = async () => {
+      const id = document.getElementById('r2dSessionId').value.trim(); if (!id) return alert("Sesi ID tidak boleh kosong!");
+      try {
+        const r = await fetch(`${getUrl()}/recordings/${id}/manifest`, { headers: getHeaders() });
+        if (!r.ok) throw new Error("Manifest tidak ditemukan (404)");
+        r2dManifest = await r.json(); r2dFrames = r2dManifest.frames || [];
+        if (r2dFrames.length > 0) {
+          document.getElementById('r2dScrubber').max = r2dFrames.length - 1;
+          document.getElementById('r2dPlayBtn').disabled = false;
+          r2dShowFrame(0);
+        }
+      } catch (e) { alert(e.message); }
+    };
+    function r2dShowFrame(idx) {
+      if (idx < 0 || idx >= r2dFrames.length) return;
+      const id = r2dManifest.session_id, f = r2dFrames[idx];
+      document.getElementById('r2dScrubber').value = idx;
+      document.getElementById('r2dFrameLabel').textContent = `${idx + 1} / ${r2dFrames.length}`;
+      r2dImg.src = `${getUrl()}/recordings/${id}/frames/${f.file}`;
+      r2dImg.onload = () => {
+        r2dCanvas.width = r2dImg.width; r2dCanvas.height = r2dImg.height;
+        r2dCtx.drawImage(r2dImg, 0, 0);
+        drawTacticalHUD(r2dCtx, r2dCanvas.width, r2dCanvas.height, f.detections || []);
+      };
+    }
+    document.getElementById('r2dScrubber').oninput = e => r2dShowFrame(parseInt(e.target.value));
+    document.getElementById('r2dPlayBtn').onclick = () => {
+      r2dPlaying = !r2dPlaying; document.getElementById('r2dPlayBtn').innerHTML = r2dPlaying ? '⏸ Pause' : '▶ Play';
+      const loop = () => {
+        if (!r2dPlaying) return;
+        let nx = parseInt(document.getElementById('r2dScrubber').value) + 1;
+        if (nx >= r2dFrames.length) { r2dPlaying = false; document.getElementById('r2dPlayBtn').innerHTML = '▶ Play'; return; }
+        r2dShowFrame(nx); setTimeout(loop, 100);
+      };
+      if (r2dPlaying) loop();
+    };
+
+    // --- 3. REPLAY 3D LOGIC (THREE.JS) ---
+    let r3dFrames = [], r3dManifest = null, r3dPlayTimer = null, r3dPlaying = false;
+    const r3dContainer = document.getElementById('r3dContainer');
+    const scene = new THREE.Scene();
+    const camera3D = new THREE.PerspectiveCamera(75, r3dContainer.clientWidth / (r3dContainer.clientHeight || 400), 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+
+    // Fix container dimensions loading issue by tracking clicks on 3D Tab
+    document.getElementById('replay3d-tab').addEventListener('shown.bs.tab', function () {
+      if (r3dContainer.clientWidth > 0) {
+        renderer.setSize(r3dContainer.clientWidth, r3dContainer.clientHeight);
+        camera3D.aspect = r3dContainer.clientWidth / r3dContainer.clientHeight;
+        camera3D.updateProjectionMatrix();
       }
-      cleanupRecording();
-    }
-
-    function cleanupRecording() {
-      if (recordInterval) { clearInterval(recordInterval); recordInterval = null; }
-      recIndicator.classList.remove('active');
-      recFrameCount.textContent = '0';
-    }
-
-    // ============================================================
-    // EVENT LISTENERS
-    // ============================================================
-    startBtn.addEventListener('click', () => { cameraActive ? stopCamera() : startCamera(); });
-    captureBtn.addEventListener('click', capturePhoto);
-    flipBtn.addEventListener('click', () => { facingMode = facingMode === 'environment' ? 'user' : 'environment'; startCamera(); });
-    uploadBtn.addEventListener('click', uploadAll);
-    downloadBtn.addEventListener('click', downloadZip);
-    clearBtn.addEventListener('click', () => {
-      capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
-      capturedPhotos = [];
-      renderGallery(); updateTip();
     });
-    testLocalizeBtn.addEventListener('click', testLocalize);
+
+    r3dContainer.appendChild(renderer.domElement);
+
+    const geo = new THREE.PlaneGeometry(16, 9);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide });
+    const plane = new THREE.Mesh(geo, mat); scene.add(plane); camera3D.position.z = 10;
+
+    function render3D() { requestAnimationFrame(render3D); renderer.render(scene, camera3D); }
+    render3D();
+
+    document.getElementById('r3dLoadBtn').onclick = async () => {
+      const id = document.getElementById('r3dSessionId').value.trim(); if (!id) return alert("Sesi ID kosong!");
+      try {
+        const r = await fetch(`${getUrl()}/recordings/${id}/manifest`, { headers: getHeaders() });
+        r3dManifest = await r.json(); r3dFrames = r3dManifest.frames || [];
+        if (r3dFrames.length > 0) {
+          document.getElementById('r3dScrubber').max = r3dFrames.length - 1;
+          document.getElementById('r3dPlayBtn').disabled = false;
+          document.getElementById('r3dSaveBtn').disabled = false;
+          r3dShowFrame(0);
+        }
+      } catch (e) { alert(e.message); }
+    };
+
+    const r3dHiddenCanvas = document.createElement('canvas');
+    const r3dHiddenCtx = r3dHiddenCanvas.getContext('2d');
+    const r3dImg = new Image();
+    r3dImg.crossOrigin = "Anonymous";
+
+    function r3dShowFrame(idx) {
+      if (idx < 0 || idx >= r3dFrames.length) return;
+      const id = r3dManifest.session_id, f = r3dFrames[idx];
+      document.getElementById('r3dScrubber').value = idx;
+      document.getElementById('r3dFrameLabel').textContent = `${idx + 1} / ${r3dFrames.length}`;
+
+      r3dImg.onload = () => {
+        r3dHiddenCanvas.width = r3dImg.width;
+        r3dHiddenCanvas.height = r3dImg.height;
+        r3dHiddenCtx.drawImage(r3dImg, 0, 0);
+        // Bake the HUD into this frame
+        drawTacticalHUD(r3dHiddenCtx, r3dHiddenCanvas.width, r3dHiddenCanvas.height, f.detections || []);
+
+        const tex = new THREE.CanvasTexture(r3dHiddenCanvas);
+        plane.material.map = tex;
+        plane.material.needsUpdate = true;
+        plane.rotation.y = (idx / r3dFrames.length) * Math.PI * 0.1 - (Math.PI * 0.05); // pseudo-3D
+      };
+      r3dImg.src = `${getUrl()}/recordings/${id}/frames/${f.file}`;
+    }
+    document.getElementById('r3dScrubber').oninput = e => r3dShowFrame(parseInt(e.target.value));
+    document.getElementById('r3dPlayBtn').onclick = () => {
+      r3dPlaying = !r3dPlaying; document.getElementById('r3dPlayBtn').innerHTML = r3dPlaying ? '⏸ Pause' : '▶ Play';
+      const loop = () => {
+        if (!r3dPlaying) return;
+        let nx = parseInt(document.getElementById('r3dScrubber').value) + 1;
+        if (nx >= r3dFrames.length) { r3dPlaying = false; document.getElementById('r3dPlayBtn').innerHTML = '▶ Play'; return; }
+        r3dShowFrame(nx); setTimeout(loop, 100);
+      };
+      if (r3dPlaying) loop();
+    };
+    document.getElementById('r3dSaveBtn').onclick = () => {
+      const a = document.createElement('a'); a.href = renderer.domElement.toDataURL('image/png');
+      a.download = `3d_replay_${document.getElementById('r3dScrubber').value}.png`; a.click();
+    };
   </script>
 </body>
 
