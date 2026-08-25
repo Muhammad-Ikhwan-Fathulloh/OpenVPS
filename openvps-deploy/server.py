@@ -25,6 +25,8 @@ Yang DITAMBAHKAN di versi ini:
 DEPLOY KE VPS: lihat docs/deploy_to_vps.md (systemd+nginx atau Docker).
 
 ENDPOINT:
+  GET  /                                -> web UI capture/relocalize/detect/record
+  GET  /replay                          -> web UI player untuk replay recording
   GET  /health                          -> status server, peta, & model YOLO
   POST /relocalize                      -> 1 foto -> pose absolut (VPS)
   POST /upload-images                   -> banyak foto -> disimpan utk Modul 02
@@ -43,6 +45,7 @@ lihat security.py & .env.example.
 
 import logging
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -51,7 +54,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 import config
@@ -83,6 +86,57 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ============================================================
+# Web UI (web_capture.html & web_replay.html) - disatukan dgn server
+# ============================================================
+# Kedua file HTML ini self-contained (CSS & JS inline, tanpa asset
+# eksternal), jadi cukup di-serve langsung sebagai halaman statis. Field
+# "Server URL" di dalamnya otomatis diisi ke origin request saat ini lewat
+# JS di bawah, supaya begitu dibuka dari VPS langsung nyambung ke API-nya
+# sendiri tanpa perlu diketik manual.
+
+BASE_DIR = Path(__file__).resolve().parent
+
+_AUTOFILL_SERVER_URL_JS = """
+<script>
+  // Auto-isi input #serverUrl dgn origin saat ini (dijalankan sebelum script
+  // lain di halaman ini, jadi nilainya sudah siap dipakai). Kalau halaman
+  // dibuka langsung dari file:// (bukan lewat server), biarkan default.
+  (function () {
+    if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+      document.addEventListener("DOMContentLoaded", function () {
+        var el = document.getElementById("serverUrl");
+        if (el) el.value = window.location.origin;
+      });
+    }
+  })();
+</script>
+"""
+
+
+def _serve_html(filename: str) -> HTMLResponse:
+    html = (BASE_DIR / filename).read_text(encoding="utf-8")
+    # Sisipkan auto-fill script tepat sebelum </head> kalau ada, kalau tidak
+    # tempel di awal body.
+    if "</head>" in html:
+        html = html.replace("</head>", _AUTOFILL_SERVER_URL_JS + "</head>", 1)
+    else:
+        html = _AUTOFILL_SERVER_URL_JS + html
+    return HTMLResponse(content=html)
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def web_capture_page():
+    """Halaman utama: UI capture + relocalize + live detect + recording."""
+    return _serve_html("web_capture.html")
+
+
+@app.get("/replay", response_class=HTMLResponse, include_in_schema=False)
+def web_replay_page():
+    """Halaman player untuk memutar ulang sesi recording."""
+    return _serve_html("web_replay.html")
 
 
 @app.exception_handler(Exception)
