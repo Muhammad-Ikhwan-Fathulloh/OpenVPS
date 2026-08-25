@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OpenVPS — Three.js Replay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg: #08090d;
+            --panel: #161922;
+            --border: #232839;
+            --accent: #06b6d4;
+            --accent2: #22d3ee;
+            --text: #f1f5f9;
+            --text2: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+        }
+
+        .main {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: var(--panel);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .controls input,
+        .controls select,
+        .controls button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+        }
+
+        .controls button {
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        .controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #canvas-container {
+            flex: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #000;
+            min-height: 400px;
+            position: relative;
+        }
+
+        #canvas-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        .timeline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeline input[type=range] {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>OpenVPS <span>Three.js Replay</span></h1>
+        <div style="display: flex; gap: 10px;">
+            <a href="web_capture.html" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">📹
+                Capture</a>
+            <a href="web_replay.html" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">🎬 Replay
+                (2D)</a>
+        </div>
+    </div>
+    <div class="main">
+        <div class="controls">
+            <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="Server URL">
+            <input type="text" id="sessionId" placeholder="Session ID">
+            <button id="loadBtn">Load Session</button>
+            <button id="playBtn" disabled>Play</button>
+            <button id="saveBtn" disabled>Save Frame to Storage</button>
+        </div>
+
+        <div id="canvas-container"></div>
+
+        <div class="timeline">
+            <span id="frameLabel">0 / 0</span>
+            <input type="range" id="scrubber" min="0" max="0" value="0">
+        </div>
+    </div>
+
+    <script>
+        const serverUrl = document.getElementById('serverUrl');
+        const sessionId = document.getElementById('sessionId');
+        const loadBtn = document.getElementById('loadBtn');
+        const playBtn = document.getElementById('playBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const scrubber = document.getElementById('scrubber');
+        const frameLabel = document.getElementById('frameLabel');
+        const container = document.getElementById('canvas-container');
+
+        // Three.js setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); // preserve to allow saving
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        // Initial plane setup
+        const geometry = new THREE.PlaneGeometry(16, 9);
+        const material = new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide });
+        const plane = new THREE.Mesh(geometry, material);
+        scene.add(plane);
+        camera.position.z = 10;
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        let manifest = null;
+        let frames = [];
+        let currentIdx = 0;
+        let playing = false;
+        let playTimer = null;
+        const textureLoader = new THREE.TextureLoader();
+        const textureCache = new Map();
+
+        const baseUrl = () => serverUrl.value.replace(/\/$/, '');
+
+        loadBtn.addEventListener('click', async () => {
+            const sid = sessionId.value.trim();
+            if (!sid) return alert('Session ID required');
+
+            try {
+                const res = await fetch(`${baseUrl()}/recordings/${sid}/manifest`);
+                if (!res.ok) throw new Error('Cannot load manifest');
+                manifest = await res.json();
+                frames = manifest.frames || [];
+
+                if (frames.length > 0) {
+                    scrubber.max = frames.length - 1;
+                    scrubber.value = 0;
+                    playBtn.disabled = false;
+                    saveBtn.disabled = false;
+                    showFrame(0);
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+
+        function getTexture(idx) {
+            if (textureCache.has(idx)) return Promise.resolve(textureCache.get(idx));
+            return new Promise((resolve, reject) => {
+                const file = frames[idx].file;
+                const url = `${baseUrl()}/recordings/${manifest.session_id}/frames/${file}`;
+                textureLoader.load(url, (tex) => {
+                    textureCache.set(idx, tex);
+                    resolve(tex);
+                }, undefined, reject);
+            });
+        }
+
+        async function showFrame(idx) {
+            if (idx < 0 || idx >= frames.length) return;
+            currentIdx = idx;
+            scrubber.value = idx;
+            frameLabel.textContent = `${idx + 1} / ${frames.length}`;
+
+            try {
+                const tex = await getTexture(idx);
+                plane.material.map = tex;
+                plane.material.needsUpdate = true;
+
+                // simple rotation effect to show 3D nature
+                plane.rotation.y = (idx / frames.length) * Math.PI * 0.1 - (Math.PI * 0.05);
+
+            } catch (e) {
+                console.error('Frame error', e);
+            }
+        }
+
+        function render() {
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+        render();
+
+        // Playback controls
+        playBtn.addEventListener('click', () => {
+            playing = !playing;
+            playBtn.textContent = playing ? 'Pause' : 'Play';
+            if (playing) scheduleNext();
+            else clearTimeout(playTimer);
+        });
+
+        function scheduleNext() {
+            if (!playing) return;
+            playTimer = setTimeout(() => {
+                let next = currentIdx + 1;
+                if (next >= frames.length) {
+                    playing = false;
+                    playBtn.textContent = 'Play';
+                    return;
+                }
+                showFrame(next);
+                scheduleNext();
+            }, 100);
+        }
+
+        scrubber.addEventListener('input', (e) => {
+            showFrame(parseInt(e.target.value));
+        });
+
+        // Save to storage
+        saveBtn.addEventListener('click', async () => {
+            // Capture current renderer canvas
+            const canvas = renderer.domElement;
+            const dataUrl = canvas.toDataURL('image/png');
+
+            // Convert to blob
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+
+            // Send to server or create download
+            // Since specific API isn't described, we'll download it directly and hint at the upload API
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `capture_frame_${currentIdx}.png`;
+            a.click();
+
+            alert('Frame captured and downloaded. To save to S3/Storage via API, backend integration is required.');
+        });
+
+    </script>
+</body>
+
+</html>
