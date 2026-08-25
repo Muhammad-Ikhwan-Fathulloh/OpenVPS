@@ -35,6 +35,11 @@ BASE_DIR = Path(__file__).resolve().parent
 API_KEY = os.getenv("OPENVPS_API_KEY", "").strip()
 AUTH_ENABLED = bool(API_KEY)
 
+# --- Multiset API ---
+# Opsional: Jika Anda ingin integrasi langsung ke Multiset.ai Cloud
+MULTISET_CLIENT_ID = os.getenv("MULTISET_CLIENT_ID", "").strip()
+MULTISET_CLIENT_SECRET = os.getenv("MULTISET_CLIENT_SECRET", "").strip()
+
 # --- CORS ---
 # Default "*" supaya gampang dites dari mana saja. GANTI ke domain frontend
 # asli kamu di production (mis. "https://vps-kamu.example.com").
