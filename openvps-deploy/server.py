@@ -63,6 +63,7 @@ import config
 import recordings
 from detector import get_detector
 from security import check_api_key, check_api_key_ws, rate_limit
+from s3_utils import storage as s3_storage
 
 # hloc_lite.py sekarang berada di folder yang sama (bukan lagi diambil dari
 # ../03_hloc_lite) supaya folder deploy ini berdiri sendiri.
@@ -332,10 +333,14 @@ async def upload_images(images: list[UploadFile] = File(...)):
 
     from datetime import datetime
     import uuid as uuid_lib
+    from io import BytesIO
 
     session_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid_lib.uuid4().hex[:6]}"
+    
+    # Folder lokal masih dibuat sebagai fallback/struktur
     session_dir = config.UPLOAD_DIR / session_id
-    session_dir.mkdir(parents=True, exist_ok=True)
+    if not s3_storage.enabled:
+        session_dir.mkdir(parents=True, exist_ok=True)
 
     n_saved = 0
     for i, img_file in enumerate(images):
@@ -346,11 +351,21 @@ async def upload_images(images: list[UploadFile] = File(...)):
         decoded = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
         if decoded is None:
             continue
-        out_path = session_dir / f"frame_{i:03d}.jpg"
-        out_path.write_bytes(raw)
-        n_saved += 1
+            
+        object_name = f"uploads/{session_id}/frame_{i:03d}.jpg"
+        
+        if s3_storage.enabled:
+            # Upload langsung ke S3 dari memory
+            success = s3_storage.upload_fileobj(BytesIO(raw), object_name, content_type='image/jpeg')
+            if success:
+                n_saved += 1
+        else:
+            # Simpan ke disk lokal
+            out_path = session_dir / f"frame_{i:03d}.jpg"
+            out_path.write_bytes(raw)
+            n_saved += 1
 
-    return UploadResponse(success=True, session_id=session_id, n_saved=n_saved, folder=str(session_dir))
+    return UploadResponse(success=True, session_id=session_id, n_saved=n_saved, folder=f"s3://uploads/{session_id}" if s3_storage.enabled else str(session_dir))
 
 
 # ============================================================

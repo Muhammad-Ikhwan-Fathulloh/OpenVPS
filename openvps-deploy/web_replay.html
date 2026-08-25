@@ -1,386 +1,830 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenVPS - Replay Hasil Capture</title>
-<style>
-  :root {
-    --bg: #0b0d12;
-    --panel: #151821;
-    --accent: #5eead4;
-    --accent-dim: #2dd4bf33;
-    --text: #e5e7eb;
-    --muted: #8b93a7;
-    --danger: #f87171;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding: 20px;
-  }
-  .wrap { max-width: 900px; margin: 0 auto; }
-  h1 { font-size: 1.4rem; margin-bottom: 4px; }
-  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
-  .card {
-    background: var(--panel);
-    border-radius: 14px;
-    padding: 18px;
-    margin-bottom: 16px;
-    border: 1px solid #23283a;
-  }
-  label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px; }
-  input[type="text"], select {
-    width: 100%;
-    background: #0e1118;
-    border: 1px solid #2a3040;
-    color: var(--text);
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    margin-bottom: 10px;
-  }
-  .row { display: flex; gap: 10px; }
-  .row > div { flex: 1; }
-  button {
-    border: none;
-    border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  button:active:not(:disabled) { opacity: 0.75; }
-  .btn-primary { background: var(--accent); color: #04231e; }
-  .btn-secondary { background: #23283a; color: var(--text); }
-  .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>OpenVPS — AR Replay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08090d;
+      --panel: #161922;
+      --border: #232839;
+      --accent: #06b6d4;
+      --accent2: #22d3ee;
+      --accent-glow: rgba(6, 182, 212, 0.15);
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.1);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.1);
+      --yellow: #f59e0b;
+      --yellow-bg: rgba(245, 158, 11, 0.08);
+      --text: #f1f5f9;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --purple: #a78bfa;
+    }
 
-  .stage {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4/3;
-    background: #000;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  canvas#stage { width: 100%; height: 100%; display: block; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  .badge {
-    display: inline-block;
-    background: var(--accent-dim);
-    color: var(--accent);
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-  .scrubber { width: 100%; margin-top: 12px; accent-color: var(--accent); }
-  .frame-info { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, #0f1117, var(--panel));
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+    }
 
-  .det-list { margin-top: 12px; }
-  .det-item {
-    display: flex; justify-content: space-between;
-    background: #0e1118; border: 1px solid #23283a;
-    border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
-    font-size: 0.85rem;
-  }
-  .det-item .conf { color: var(--accent); }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-  .status { margin-top: 12px; font-size: 0.88rem; padding: 10px 12px; border-radius: 8px; }
-  .status.info { background: #1a2436; color: #93c5fd; }
-  .status.ok { background: #10261c; color: var(--ok); }
-  .status.err { background: #2a1414; color: var(--danger); }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-  .session-list { max-height: 220px; overflow-y: auto; margin-top: 10px; }
-  .session-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 10px; border-radius: 8px; cursor: pointer;
-    border: 1px solid #23283a; margin-bottom: 6px; font-size: 0.85rem;
-  }
-  .session-row:hover { border-color: var(--accent); }
-  .session-row .meta { color: var(--muted); font-size: 0.78rem; }
-  h3 { font-size: 1rem; margin: 0 0 10px; }
-</style>
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .logo h1 {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .logo span {
+      color: var(--accent2);
+    }
+
+    .header-badge {
+      font-size: 0.68rem;
+      background: var(--accent-glow);
+      color: var(--accent2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    /* ===== LAYOUT ===== */
+    .main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    label.fl {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"],
+    select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #0e9dc0);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.2);
+    }
+
+    .btn-ghost {
+      background: var(--panel);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    /* ===== AR STAGE ===== */
+    .ar-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/10;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .ar-stage:active {
+      cursor: grabbing;
+    }
+
+    .ar-stage canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* HUD overlays */
+    .hud {
+      position: absolute;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .hud-tl {
+      top: 14px;
+      left: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-tr {
+      top: 14px;
+      right: 14px;
+      text-align: right;
+    }
+
+    .hud-bl {
+      bottom: 14px;
+      left: 14px;
+    }
+
+    .hud-br {
+      bottom: 14px;
+      right: 14px;
+    }
+
+    .hud-pill {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent2);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .hud-pill.green {
+      color: var(--green);
+    }
+
+    .hud-pill .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* ===== SCRUBBER / TIMELINE ===== */
+    .timeline-bar {
+      margin-top: 12px;
+      padding: 0 4px;
+    }
+
+    .scrubber-wrap {
+      position: relative;
+      height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="range"].scrubber {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"].scrubber::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent2);
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+      cursor: grab;
+    }
+
+    input[type="range"].scrubber::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent2);
+      border: none;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+    }
+
+    .timeline-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .timeline-controls .left,
+    .timeline-controls .right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .frame-label {
+      font-size: 0.78rem;
+      color: var(--text2);
+      font-weight: 500;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* ===== DETECTION LIST ===== */
+    .det-panel {
+      margin-top: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .det-panel h3 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .det-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent-glow);
+      color: var(--accent2);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+
+    /* ===== SESSION LIST ===== */
+    .session-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .session-panel h3 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .session-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      margin-bottom: 6px;
+      font-size: 0.82rem;
+      transition: border-color 0.2s;
+    }
+
+    .session-row:hover {
+      border-color: var(--accent);
+    }
+
+    .session-row .meta {
+      color: var(--text3);
+      font-size: 0.72rem;
+    }
+
+    .toast {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      display: none;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px)
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    .toast.info {
+      display: block;
+      background: var(--yellow-bg);
+      color: var(--yellow);
+    }
+
+    .toast.ok {
+      display: block;
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .toast.err {
+      display: block;
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    /* Swipe hint */
+    .swipe-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 30;
+      color: var(--text2);
+      font-size: 0.85rem;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .swipe-hint .arrows {
+      font-size: 2rem;
+      margin-bottom: 6px;
+    }
+  </style>
 </head>
+
 <body>
-<div class="wrap">
-  <h1>🎬 OpenVPS — Replay Hasil Capture</h1>
-  <p class="sub">Putar ulang sesi capture (frame asli + bounding box hasil deteksi YOLO tiap frame) yang direkam lewat <span class="badge">web_capture.html</span>.</p>
 
-  <div class="card">
-    <div class="row">
-      <div>
-        <label for="serverUrl">Alamat Server OpenVPS</label>
-        <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="https://vps-kamu.example.com">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">V</div>
+        <div>
+          <h1>Open<span>VPS</span> Replay</h1>
+        </div>
       </div>
-      <div>
-        <label for="apiKey">API Key (kosongkan kalau server mode dev/tanpa auth)</label>
-        <input type="text" id="apiKey" placeholder="X-API-Key">
-      </div>
+      <div class="header-badge">🎬 AR Replay Mode</div>
     </div>
-    <div class="row">
-      <div>
-        <label for="sessionId">Session ID</label>
-        <input type="text" id="sessionId" placeholder="20260101_120000_ab12cd">
-      </div>
-    </div>
-    <div class="controls">
-      <button class="btn-primary" id="loadBtn">📂 Muat Sesi</button>
-      <button class="btn-secondary" id="listBtn">📋 Lihat Daftar Sesi</button>
-    </div>
-    <div id="sessionList" class="session-list"></div>
-    <div id="status"></div>
   </div>
 
-  <div class="card" id="playerCard" style="display:none;">
-    <div class="stage">
-      <canvas id="stage"></canvas>
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOP CONFIG BAR -->
+    <div class="top-bar">
+      <div>
+        <label class="fl">Server</label>
+        <input type="text" id="serverUrl" value="http://localhost:8000" style="width: 260px;">
+      </div>
+      <div>
+        <label class="fl">API Key</label>
+        <input type="text" id="apiKey" placeholder="Opsional" style="width: 160px;">
+      </div>
+      <div>
+        <label class="fl">Session ID</label>
+        <input type="text" id="sessionId" placeholder="Kosong = daftar semua" style="width: 200px;">
+      </div>
+      <button class="btn btn-primary" id="loadBtn">📂 Muat</button>
+      <button class="btn btn-ghost" id="listBtn">📋 Daftar Sesi</button>
     </div>
-    <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0">
-    <div class="frame-info">
-      <span id="frameLabel">Frame 0 / 0</span>
-      <span id="fpsLabel"></span>
+
+    <div id="statusToast" class="toast"></div>
+
+    <!-- SESSION LIST (hidden by default) -->
+    <div id="sessionPanel" class="session-panel" style="display:none;">
+      <h3>Sesi Tersedia</h3>
+      <div id="sessionList"></div>
     </div>
-    <div class="controls">
-      <button class="btn-primary" id="playBtn">▶️ Putar</button>
-      <button class="btn-secondary" id="prevBtn">⏮️ Sebelumnya</button>
-      <button class="btn-secondary" id="nextBtn">⏭️ Berikutnya</button>
-      <select id="speedSel" style="max-width:120px; margin-bottom:0;">
-        <option value="0.5">0.5x</option>
-        <option value="1" selected>1x</option>
-        <option value="2">2x</option>
-        <option value="4">4x</option>
-      </select>
+
+    <!-- AR STAGE -->
+    <div class="ar-stage" id="arStage">
+      <canvas id="stageCanvas"></canvas>
+
+      <!-- HUD Overlays -->
+      <div class="hud hud-tl">
+        <div class="hud-pill green">
+          <div class="dot"></div> REPLAY
+        </div>
+      </div>
+      <div class="hud hud-tr">
+        <div class="hud-pill" id="hudFrame">Frame 0 / 0</div>
+      </div>
+      <div class="hud hud-bl">
+        <div class="hud-pill" id="hudObjects">0 objek</div>
+      </div>
+      <div class="hud hud-br">
+        <div class="hud-pill" id="hudSpeed">1x</div>
+      </div>
+
+      <!-- Swipe hint (shown when no session loaded) -->
+      <div class="swipe-hint" id="swipeHint">
+        <div class="arrows">👆 ← →</div>
+        <p>Geser/drag untuk berpindah frame<br>atau gunakan slider di bawah</p>
+      </div>
     </div>
-    <div class="det-list" id="detList"></div>
+
+    <!-- TIMELINE / SCRUBBER -->
+    <div class="timeline-bar">
+      <div class="scrubber-wrap">
+        <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0">
+      </div>
+      <div class="timeline-controls">
+        <div class="left">
+          <button class="btn btn-ghost" id="prevBtn" disabled>⏮</button>
+          <button class="btn btn-primary" id="playBtn" disabled>▶ Play</button>
+          <button class="btn btn-ghost" id="nextBtn" disabled>⏭</button>
+        </div>
+        <div class="right">
+          <span class="frame-label" id="frameLabel">0 / 0</span>
+          <select id="speedSelect" style="width: 70px;">
+            <option value="0.25">0.25x</option>
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETECTION PANEL -->
+    <div class="det-panel" id="detPanel" style="display:none;">
+      <h3>🎯 Objek Terdeteksi</h3>
+      <div id="detChips"></div>
+    </div>
   </div>
-</div>
 
-<script>
-const serverUrlInput = document.getElementById('serverUrl');
-const apiKeyInput = document.getElementById('apiKey');
-const sessionIdInput = document.getElementById('sessionId');
-const statusEl = document.getElementById('status');
-const sessionListEl = document.getElementById('sessionList');
-const playerCard = document.getElementById('playerCard');
-const canvas = document.getElementById('stage');
-const ctx = canvas.getContext('2d');
-const scrubber = document.getElementById('scrubber');
-const frameLabel = document.getElementById('frameLabel');
-const fpsLabel = document.getElementById('fpsLabel');
-const playBtn = document.getElementById('playBtn');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const speedSel = document.getElementById('speedSel');
-const detList = document.getElementById('detList');
+  <script>
+    // ============================================================
+    // DOM
+    // ============================================================
+    const serverUrlInput = document.getElementById('serverUrl');
+    const apiKeyInput = document.getElementById('apiKey');
+    const sessionIdInput = document.getElementById('sessionId');
+    const statusToast = document.getElementById('statusToast');
+    const sessionPanel = document.getElementById('sessionPanel');
+    const sessionList = document.getElementById('sessionList');
+    const arStage = document.getElementById('arStage');
+    const stageCanvas = document.getElementById('stageCanvas');
+    const scrubber = document.getElementById('scrubber');
+    const playBtn = document.getElementById('playBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const frameLabel = document.getElementById('frameLabel');
+    const speedSelect = document.getElementById('speedSelect');
+    const hudFrame = document.getElementById('hudFrame');
+    const hudObjects = document.getElementById('hudObjects');
+    const hudSpeed = document.getElementById('hudSpeed');
+    const swipeHint = document.getElementById('swipeHint');
+    const detPanel = document.getElementById('detPanel');
+    const detChips = document.getElementById('detChips');
+    const ctx = stageCanvas.getContext('2d');
 
-// Prefill dari query string: web_capture.html mengarahkan ke sini dengan
-// ?server=...&session=...&api_key=... setelah selesai merekam.
-const qs = new URLSearchParams(location.search);
-if (qs.get('server')) serverUrlInput.value = qs.get('server');
-if (qs.get('session')) sessionIdInput.value = qs.get('session');
-if (qs.get('api_key')) apiKeyInput.value = qs.get('api_key');
+    let manifest = null;
+    let frameCache = new Map();
+    let lastDetections = null;
+    let currentIdx = 0;
+    let playing = false;
+    let playTimer = null;
 
-let manifest = null;
-let frameCache = new Map(); // frame number -> HTMLImageElement
-let lastKnownDetections = null; // untuk 'menahan' box di frame yang di-skip deteksinya
-let currentIdx = 0;
-let playing = false;
-let playTimer = null;
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function toast(msg, type) { statusToast.className = `toast ${type}`; statusToast.textContent = msg; }
+    function getHeaders() { const k = apiKeyInput.value.trim(); return k ? { 'X-API-Key': k } : {}; }
+    function baseUrl() { return serverUrlInput.value.replace(/\/$/, ''); }
 
-function setStatus(msg, type) {
-  statusEl.className = 'status ' + (type || 'info');
-  statusEl.textContent = msg;
-}
+    // Read session from URL query
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('session')) sessionIdInput.value = params.get('session');
+    if (params.get('server')) serverUrlInput.value = params.get('server');
 
-function apiHeaders() {
-  const key = apiKeyInput.value.trim();
-  return key ? { 'X-API-Key': key } : {};
-}
-
-function baseUrl() {
-  return serverUrlInput.value.replace(/\/$/, '');
-}
-
-async function listSessions() {
-  const url = baseUrl();
-  setStatus('Mengambil daftar sesi...', 'info');
-  try {
-    const res = await fetch(`${url}/recordings`, { headers: apiHeaders() });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const sessions = await res.json();
-    sessionListEl.innerHTML = '';
-    if (sessions.length === 0) {
-      sessionListEl.innerHTML = '<p class="frame-info">Belum ada sesi recording.</p>';
+    // ============================================================
+    // SESSION LIST
+    // ============================================================
+    async function listSessions() {
+      try {
+        toast('Memuat daftar sesi...', 'info');
+        const res = await fetch(`${baseUrl()}/recordings`, { headers: getHeaders() });
+        const data = await res.json();
+        const sessions = data.sessions || data;
+        sessionPanel.style.display = 'block';
+        sessionList.innerHTML = '';
+        if (!sessions.length) { sessionList.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;">Belum ada sesi.</div>'; return; }
+        sessions.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'session-row';
+          row.innerHTML = `<span>${s.session_id}</span><span class="meta">${s.n_frames || '?'} frame</span>`;
+          row.addEventListener('click', () => {
+            sessionIdInput.value = s.session_id;
+            loadSession();
+          });
+          sessionList.appendChild(row);
+        });
+        toast(`📋 ${sessions.length} sesi ditemukan`, 'ok');
+      } catch (e) {
+        toast('❌ ' + e.message, 'err');
+      }
     }
-    sessions.forEach(s => {
-      const row = document.createElement('div');
-      row.className = 'session-row';
-      row.innerHTML = `<span>${s.session_id} <span class="badge">${s.status}</span></span><span class="meta">${s.n_frames} frame</span>`;
-      row.addEventListener('click', () => {
-        sessionIdInput.value = s.session_id;
-        loadSession();
+
+    // ============================================================
+    // LOAD SESSION
+    // ============================================================
+    async function loadSession() {
+      const sid = sessionIdInput.value.trim();
+      if (!sid) { toast('Masukkan Session ID atau pilih dari daftar.', 'err'); return; }
+      try {
+        toast('Memuat manifest...', 'info');
+        const res = await fetch(`${baseUrl()}/recordings/${sid}/manifest`, { headers: getHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        manifest = await res.json();
+        frameCache.clear();
+        currentIdx = 0; lastDetections = null;
+
+        const total = manifest.frames.length;
+        scrubber.max = total - 1; scrubber.value = 0;
+        playBtn.disabled = false; prevBtn.disabled = false; nextBtn.disabled = false;
+        swipeHint.style.display = 'none';
+        sessionPanel.style.display = 'none';
+
+        toast(`✅ Sesi dimuat: ${total} frame`, 'ok');
+        preload(0, 10);
+        showFrame(0);
+      } catch (e) {
+        toast('❌ ' + e.message, 'err');
+      }
+    }
+
+    // ============================================================
+    // FRAME LOADING & DISPLAY
+    // ============================================================
+    function fetchFrameImage(idx) {
+      if (frameCache.has(idx)) return Promise.resolve(frameCache.get(idx));
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const f = manifest.frames[idx];
+        img.src = `${baseUrl()}/recordings/${manifest.session_id}/frames/${f.file}`;
+        img.onload = () => { frameCache.set(idx, img); resolve(img); };
+        img.onerror = reject;
       });
-      sessionListEl.appendChild(row);
-    });
-    setStatus(`✅ ${sessions.length} sesi ditemukan.`, 'ok');
-  } catch (err) {
-    setStatus(`❌ Gagal ambil daftar sesi: ${err.message}`, 'err');
-  }
-}
-
-async function loadSession() {
-  const url = baseUrl();
-  const sessionId = sessionIdInput.value.trim();
-  if (!sessionId) { setStatus('Isi Session ID dulu (atau pilih dari daftar).', 'err'); return; }
-
-  setStatus('Memuat manifest sesi...', 'info');
-  try {
-    const res = await fetch(`${url}/recordings/${sessionId}/manifest`, { headers: apiHeaders() });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    manifest = await res.json();
-    if (!manifest.frames || manifest.frames.length === 0) {
-      setStatus('Sesi ini belum punya frame tersimpan.', 'err');
-      return;
     }
-    frameCache.clear();
-    lastKnownDetections = null;
-    currentIdx = 0;
-    scrubber.max = manifest.frames.length - 1;
-    scrubber.value = 0;
-    playerCard.style.display = 'block';
-    fpsLabel.textContent = manifest.fps_estimate ? `~${manifest.fps_estimate} fps saat rekam` : '';
-    setStatus(`✅ Sesi dimuat: ${manifest.frames.length} frame (status: ${manifest.status}).`, 'ok');
-    await showFrame(0);
-    preload(0, 5);
-  } catch (err) {
-    setStatus(`❌ Gagal muat sesi: ${err.message}`, 'err');
-  }
-}
 
-async function fetchFrameImage(idx) {
-  if (frameCache.has(idx)) return frameCache.get(idx);
-  const rec = manifest.frames[idx];
-  const url = baseUrl();
-  const res = await fetch(`${url}/recordings/${manifest.session_id}/frames/${rec.file}`, { headers: apiHeaders() });
-  if (!res.ok) throw new Error(`Gagal ambil frame ${rec.frame}`);
-  const blob = await res.blob();
-  const img = await createImageBitmap(blob);
-  frameCache.set(idx, img);
-  return img;
-}
+    function preload(startIdx, count) {
+      for (let i = startIdx; i < Math.min(startIdx + count, manifest.frames.length); i++) {
+        fetchFrameImage(i).catch(() => { });
+      }
+    }
 
-function preload(startIdx, count) {
-  for (let i = startIdx; i < Math.min(startIdx + count, manifest.frames.length); i++) {
-    if (!frameCache.has(i)) fetchFrameImage(i).catch(() => {});
-  }
-}
+    async function showFrame(idx) {
+      if (!manifest || idx < 0 || idx >= manifest.frames.length) return;
+      currentIdx = idx;
+      const total = manifest.frames.length;
 
-function drawDetections(dets) {
-  if (!dets) return;
-  ctx.lineWidth = Math.max(2, canvas.width / 400);
-  ctx.font = `${Math.max(14, canvas.width / 45)}px -apple-system, sans-serif`;
-  dets.forEach(d => {
-    const [x1, y1, x2, y2] = d.box;
-    ctx.strokeStyle = '#5eead4';
-    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-    const label = `${d.label} ${(d.conf * 100).toFixed(0)}%`;
-    const textW = ctx.measureText(label).width + 10;
-    ctx.fillStyle = 'rgba(6, 20, 18, 0.85)';
-    ctx.fillRect(x1, Math.max(0, y1 - 22), textW, 22);
-    ctx.fillStyle = '#5eead4';
-    ctx.fillText(label, x1 + 5, Math.max(14, y1 - 6));
-  });
-}
+      // Update UI labels
+      scrubber.value = idx;
+      const label = `${idx + 1} / ${total}`;
+      frameLabel.textContent = label;
+      hudFrame.textContent = `Frame ${label}`;
 
-function renderDetList(dets) {
-  detList.innerHTML = '';
-  if (!dets || dets.length === 0) {
-    detList.innerHTML = '<p class="frame-info">Tidak ada objek terdeteksi di frame ini.</p>';
-    return;
-  }
-  dets.forEach(d => {
-    const div = document.createElement('div');
-    div.className = 'det-item';
-    div.innerHTML = `<span>${d.label}</span><span class="conf">${(d.conf * 100).toFixed(1)}%</span>`;
-    detList.appendChild(div);
-  });
-}
+      // Draw frame
+      try {
+        const img = await fetchFrameImage(idx);
+        stageCanvas.width = img.naturalWidth;
+        stageCanvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
 
-async function showFrame(idx) {
-  if (!manifest) return;
-  idx = Math.max(0, Math.min(idx, manifest.frames.length - 1));
-  currentIdx = idx;
-  scrubber.value = idx;
+        // Draw detections
+        const frameData = manifest.frames[idx];
+        let dets = frameData.detections;
+        if (dets && dets.length > 0) {
+          lastDetections = dets;
+        } else if (lastDetections) {
+          dets = lastDetections; // hold previous detections
+        }
 
-  const rec = manifest.frames[idx];
-  // Frame yang di-skip deteksinya (config DETECT_EVERY_N_FRAMES > 1) tidak
-  // punya deteksi baru -> tahan (hold) box terakhir yang diketahui, supaya
-  // overlay tidak "berkedip" hilang tiap frame yang di-skip.
-  if (rec.detected) lastKnownDetections = rec.detections;
+        if (dets && dets.length > 0) {
+          drawDetections(dets);
+          renderDetChips(dets);
+          hudObjects.textContent = `${dets.length} objek`;
+        } else {
+          hudObjects.textContent = '0 objek';
+          detPanel.style.display = 'none';
+        }
+      } catch {
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, stageCanvas.width || 640, stageCanvas.height || 480);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = '16px Inter, sans-serif';
+        ctx.fillText('Gagal memuat frame', 20, 40);
+      }
 
-  frameLabel.textContent = `Frame ${idx + 1} / ${manifest.frames.length}`;
+      preload(idx + 1, 5);
+    }
 
-  try {
-    const img = await fetchFrameImage(idx);
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-    drawDetections(lastKnownDetections);
-    renderDetList(lastKnownDetections);
-    preload(idx + 1, 4);
-  } catch (err) {
-    setStatus(`⚠️ ${err.message}`, 'err');
-  }
-}
+    function drawDetections(dets) {
+      dets.forEach(d => {
+        const [x1, y1, x2, y2] = d.bbox;
+        // Bounding box
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = Math.max(2, stageCanvas.width / 400);
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-function stopPlayback() {
-  playing = false;
-  playBtn.textContent = '▶️ Putar';
-  if (playTimer) clearTimeout(playTimer);
-}
+        // Label background
+        const label = `${d.label} ${(d.confidence * 100).toFixed(0)}%`;
+        ctx.font = `bold ${Math.max(12, stageCanvas.width / 60)}px Inter, sans-serif`;
+        const tw = ctx.measureText(label).width;
+        const lh = Math.max(18, stageCanvas.width / 40);
+        ctx.fillStyle = 'rgba(6,182,212,0.75)';
+        ctx.fillRect(x1, y1 - lh, tw + 12, lh);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, x1 + 6, y1 - 4);
+      });
+    }
 
-function startPlayback() {
-  if (!manifest || currentIdx >= manifest.frames.length - 1) currentIdx = 0;
-  playing = true;
-  playBtn.textContent = '⏸️ Jeda';
-  scheduleNextFrame();
-}
+    function renderDetChips(dets) {
+      detPanel.style.display = 'block';
+      detChips.innerHTML = dets.map(d =>
+        `<span class="det-chip">${d.label} ${(d.confidence * 100).toFixed(0)}%</span>`
+      ).join('');
+    }
 
-function scheduleNextFrame() {
-  if (!playing) return;
-  const speed = parseFloat(speedSel.value);
-  const frames = manifest.frames;
-  let delayMs = 150; // fallback kalau timestamp tidak masuk akal
-  if (currentIdx < frames.length - 1) {
-    const dt = (frames[currentIdx + 1].ts - frames[currentIdx].ts) * 1000;
-    if (dt > 0 && dt < 5000) delayMs = dt;
-  }
-  playTimer = setTimeout(async () => {
-    if (!playing) return;
-    if (currentIdx >= frames.length - 1) { stopPlayback(); return; }
-    await showFrame(currentIdx + 1);
-    scheduleNextFrame();
-  }, delayMs / speed);
-}
+    // ============================================================
+    // PLAYBACK
+    // ============================================================
+    function stopPlayback() {
+      playing = false; playBtn.textContent = '▶ Play';
+      if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+    }
 
-document.getElementById('loadBtn').addEventListener('click', loadSession);
-document.getElementById('listBtn').addEventListener('click', listSessions);
-scrubber.addEventListener('input', () => { stopPlayback(); showFrame(parseInt(scrubber.value)); });
-prevBtn.addEventListener('click', () => { stopPlayback(); showFrame(currentIdx - 1); });
-nextBtn.addEventListener('click', () => { stopPlayback(); showFrame(currentIdx + 1); });
-playBtn.addEventListener('click', () => { playing ? stopPlayback() : startPlayback(); });
+    function startPlayback() {
+      if (!manifest) return;
+      playing = true; playBtn.textContent = '⏸ Pause';
+      scheduleNext();
+    }
 
-// Auto-load kalau session id sudah terisi dari query string
-if (sessionIdInput.value) loadSession();
-</script>
+    function scheduleNext() {
+      if (!playing || !manifest) return;
+      const speed = parseFloat(speedSelect.value) || 1;
+      hudSpeed.textContent = `${speed}x`;
+      const delay = (manifest.frame_interval_ms || 200) / speed;
+      playTimer = setTimeout(() => {
+        const next = currentIdx + 1;
+        if (next >= manifest.frames.length) { stopPlayback(); return; }
+        showFrame(next);
+        scheduleNext();
+      }, delay);
+    }
+
+    // ============================================================
+    // TOUCH / DRAG SCRUBBING (AR-like "geser geser")
+    // ============================================================
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartIdx = 0;
+
+    arStage.addEventListener('pointerdown', (e) => {
+      if (!manifest) return;
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartIdx = currentIdx;
+      arStage.setPointerCapture(e.pointerId);
+      stopPlayback();
+    });
+
+    arStage.addEventListener('pointermove', (e) => {
+      if (!isDragging || !manifest) return;
+      const dx = e.clientX - dragStartX;
+      const stageW = arStage.offsetWidth;
+      const total = manifest.frames.length;
+      // Map drag distance to frame count: full width = all frames
+      const frameDelta = Math.round((dx / stageW) * total * 0.5);
+      let newIdx = dragStartIdx - frameDelta; // drag right = go back (like scrolling)
+      newIdx = Math.max(0, Math.min(total - 1, newIdx));
+      if (newIdx !== currentIdx) showFrame(newIdx);
+    });
+
+    arStage.addEventListener('pointerup', () => { isDragging = false; });
+    arStage.addEventListener('pointercancel', () => { isDragging = false; });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (!manifest) return;
+      if (e.key === 'ArrowRight') { stopPlayback(); showFrame(Math.min(currentIdx + 1, manifest.frames.length - 1)); }
+      if (e.key === 'ArrowLeft') { stopPlayback(); showFrame(Math.max(currentIdx - 1, 0)); }
+      if (e.key === ' ') { e.preventDefault(); playing ? stopPlayback() : startPlayback(); }
+    });
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+    document.getElementById('loadBtn').addEventListener('click', loadSession);
+    document.getElementById('listBtn').addEventListener('click', listSessions);
+    scrubber.addEventListener('input', () => { stopPlayback(); showFrame(parseInt(scrubber.value)); });
+    prevBtn.addEventListener('click', () => { stopPlayback(); showFrame(Math.max(currentIdx - 1, 0)); });
+    nextBtn.addEventListener('click', () => { if (manifest) { stopPlayback(); showFrame(Math.min(currentIdx + 1, manifest.frames.length - 1)); } });
+    playBtn.addEventListener('click', () => { playing ? stopPlayback() : startPlayback(); });
+    speedSelect.addEventListener('change', () => { hudSpeed.textContent = speedSelect.value + 'x'; });
+
+    // Auto-load
+    if (sessionIdInput.value) loadSession();
+  </script>
 </body>
+
 </html>

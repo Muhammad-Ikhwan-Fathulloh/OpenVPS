@@ -71,6 +71,13 @@ RECORDINGS_DIR = Path(os.getenv("OPENVPS_RECORDINGS_DIR", str(BASE_DIR / "record
 MAX_UPLOAD_MB = int(os.getenv("OPENVPS_MAX_UPLOAD_MB", "15"))
 MAX_WS_FRAME_MB = int(os.getenv("OPENVPS_MAX_WS_FRAME_MB", "8"))
 
+# --- S3 Storage (Cloudeka) ---
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "").strip()
+S3_REGION = os.getenv("S3_REGION", "").strip()
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "").strip()
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "").strip()
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "").strip()
+
 # --- Rate limiting (sederhana, in-memory per-proses; cukup untuk 1 VPS.
 # Kalau scale ke multi-instance, ganti ke Redis-based limiter). ---
 RATE_LIMIT_ENABLED = _bool("OPENVPS_RATE_LIMIT_ENABLED", True)

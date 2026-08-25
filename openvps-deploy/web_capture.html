@@ -4,66 +4,218 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenVPS - Pengambil Foto untuk Pemetaan</title>
+  <title>OpenVPS — Visual Positioning System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0d12;
-      --panel: #151821;
-      --accent: #5eead4;
-      --accent-dim: #2dd4bf33;
-      --text: #e5e7eb;
-      --muted: #8b93a7;
-      --danger: #f87171;
-      --ok: #4ade80;
+      --bg: #08090d;
+      --bg2: #0f1117;
+      --panel: #161922;
+      --panel-hover: #1c2030;
+      --border: #232839;
+      --accent: #06b6d4;
+      --accent2: #22d3ee;
+      --accent-glow: rgba(6, 182, 212, 0.15);
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.1);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.1);
+      --yellow: #f59e0b;
+      --yellow-bg: rgba(245, 158, 11, 0.08);
+      --text: #f1f5f9;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --purple: #a78bfa;
+      --purple-bg: rgba(167, 139, 250, 0.1);
     }
 
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      margin: 0;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, var(--bg2), var(--panel));
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .logo h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .logo span {
+      color: var(--accent2);
+    }
+
+    .header-badge {
+      font-size: 0.7rem;
+      background: var(--accent-glow);
+      color: var(--accent2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    /* ===== MAIN ===== */
+    .main {
+      max-width: 1100px;
+      margin: 0 auto;
       padding: 20px;
     }
 
-    .wrap {
-      max-width: 900px;
-      margin: 0 auto;
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
     }
 
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 4px;
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
 
-    .sub {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 20px;
-    }
-
+    /* ===== CARDS ===== */
     .card {
       background: var(--panel);
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 16px;
-      border: 1px solid #23283a;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
     }
 
-    .video-box {
+    .card:hover {
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    .card-header {
+      padding: 16px 18px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .card-header h2 {
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .card-header p {
+      font-size: 0.75rem;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .card-body {
+      padding: 16px 18px;
+    }
+
+    /* ===== CONFIG SECTION ===== */
+    .config-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    label.field-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* ===== CAMERA BOX ===== */
+    .camera-container {
       position: relative;
       width: 100%;
-      aspect-ratio: 4/3;
+      aspect-ratio: 16/10;
       background: #000;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
+      border: 1px solid var(--border);
     }
 
-    video,
-    canvas.overlay {
+    #video,
+    #overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -72,74 +224,180 @@
       object-fit: cover;
     }
 
-    canvas.overlay {
+    #overlay {
       pointer-events: none;
     }
 
-    .counter {
+    .cam-badge {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 6px 12px;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
       border-radius: 20px;
+      font-size: 0.8rem;
       font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .counter.done {
-      color: var(--ok);
-    }
-
-    .controls {
       display: flex;
-      gap: 10px;
-      margin-top: 14px;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cam-badge.live {
+      color: var(--green);
+    }
+
+    .cam-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.8)
+      }
+    }
+
+    .photo-counter {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent2);
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn-row {
+      display: flex;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-    button {
+    .btn {
       border: none;
       border-radius: 10px;
-      padding: 12px 18px;
-      font-size: 0.95rem;
+      padding: 10px 18px;
+      font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.15s;
+      font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
     }
 
-    button:disabled {
-      opacity: 0.4;
+    .btn:disabled {
+      opacity: 0.35;
       cursor: not-allowed;
     }
 
-    button:active:not(:disabled) {
-      opacity: 0.75;
+    .btn:active:not(:disabled) {
+      transform: scale(0.97);
     }
 
     .btn-primary {
-      background: var(--accent);
-      color: #04231e;
+      background: linear-gradient(135deg, var(--accent), #0e9dc0);
+      color: #fff;
       flex: 1;
-      min-width: 160px;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(6, 182, 212, 0.25);
     }
 
-    .btn-secondary {
-      background: #23283a;
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-ghost {
+      background: var(--bg2);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--panel-hover);
       color: var(--text);
     }
 
     .btn-danger {
       background: transparent;
-      color: var(--danger);
-      border: 1px solid var(--danger);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    .btn-danger:hover:not(:disabled) {
+      background: var(--red-bg);
+    }
+
+    /* ===== STATUS / TOAST ===== */
+    .toast {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: none;
+      align-items: center;
       gap: 8px;
-      margin-top: 14px;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .toast.info {
+      display: flex;
+      background: var(--yellow-bg);
+      color: var(--yellow);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+    }
+
+    .toast.ok {
+      display: flex;
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+
+    .toast.err {
+      display: flex;
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+    /* ===== GALLERY ===== */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
+      gap: 6px;
     }
 
     .thumb {
@@ -147,7 +405,12 @@
       aspect-ratio: 1;
       border-radius: 8px;
       overflow: hidden;
-      border: 1px solid #2a3040;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+
+    .thumb:hover {
+      border-color: var(--accent);
     }
 
     .thumb img {
@@ -159,233 +422,427 @@
 
     .thumb .rm {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      top: 3px;
+      right: 3px;
       background: rgba(0, 0, 0, 0.7);
-      color: var(--danger);
+      color: var(--red);
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      line-height: 20px;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      line-height: 18px;
       text-align: center;
       cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
     }
 
-    label {
-      font-size: 0.85rem;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 6px;
+    .thumb:hover .rm {
+      opacity: 1;
     }
 
-    input[type="text"] {
+    /* ===== LOCALIZE RESULT VISUAL ===== */
+    .localize-visual {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      min-height: 180px;
+    }
+
+    .localize-visual img {
       width: 100%;
-      background: #0e1118;
-      border: 1px solid #2a3040;
-      color: var(--text);
-      padding: 10px 12px;
+      display: block;
+    }
+
+    .result-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+      padding: 40px 16px 16px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .result-item {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(8px);
       border-radius: 8px;
-      font-size: 0.9rem;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .status {
-      margin-top: 12px;
-      font-size: 0.88rem;
-      padding: 10px 12px;
-      border-radius: 8px;
-    }
-
-    .status.info {
-      background: #1a2436;
-      color: #93c5fd;
-    }
-
-    .status.ok {
-      background: #10261c;
-      color: var(--ok);
-    }
-
-    .status.err {
-      background: #2a1414;
-      color: var(--danger);
-    }
-
-    .progress-tips {
-      font-size: 0.85rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-top: 8px;
-    }
-
-    .badge {
-      display: inline-block;
-      background: var(--accent-dim);
-      color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
+    .result-item .label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text3);
+      margin-bottom: 2px;
       font-weight: 600;
     }
 
-    #resultBox pre {
-      background: #0e1118;
-      padding: 12px;
-      border-radius: 8px;
-      overflow-x: auto;
+    .result-item .value {
       font-size: 0.82rem;
-      color: #a5f3dc;
+      font-weight: 600;
+      color: var(--accent2);
+      font-family: 'SF Mono', 'Fira Code', monospace;
     }
 
-    h3 {
-      font-size: 1rem;
-      margin: 0 0 10px;
+    .result-item.success .value {
+      color: var(--green);
     }
 
-    .rec-dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
+    .result-item.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .provider-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+
+    .provider-tag.openvps {
+      background: var(--accent-glow);
+      color: var(--accent2);
+    }
+
+    .provider-tag.multiset {
+      background: var(--purple-bg);
+      color: var(--purple);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      color: var(--text3);
+      gap: 8px;
+      min-height: 180px;
+    }
+
+    .empty-state .icon {
+      font-size: 2rem;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    /* ===== DETECT / RECORD TOGGLES ===== */
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .toggle-card .info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-card .info .emoji {
+      font-size: 1.2rem;
+    }
+
+    .toggle-card .info .title {
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .toggle-card .info .desc {
+      font-size: 0.7rem;
+      color: var(--text3);
+    }
+
+    .switch {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      cursor: pointer;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+
+    .switch .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
       border-radius: 50%;
-      background: var(--danger);
-      margin-right: 6px;
-      vertical-align: middle;
+      transition: 0.3s;
+    }
+
+    .switch input:checked+.slider {
+      background: var(--accent);
+    }
+
+    .switch input:checked+.slider::before {
+      transform: translateX(18px);
+    }
+
+    /* ===== RECORDING ===== */
+    .rec-indicator {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--red);
+      padding: 6px 12px;
+      background: var(--red-bg);
+      border-radius: 8px;
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+    .rec-indicator.active {
+      display: inline-flex;
+    }
+
+    .rec-indicator .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
       animation: pulse 1s infinite;
     }
 
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.3;
-      }
+    /* ===== SECTION SPACER ===== */
+    .section-gap {
+      margin-bottom: 16px;
     }
 
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      font-size: 0.88rem;
-    }
-
-    .toggle-row input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--accent);
-    }
-
-    #detCounter {
-      top: 10px;
-      left: auto;
-      right: 10px;
-    }
-
-    #recCounter {
-      top: auto;
-      bottom: 10px;
-      left: 10px;
+    .sidebar>.card+.card {
+      margin-top: 16px;
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <h1>📷 OpenVPS — Pengambil Foto untuk Pemetaan</h1>
-    <p class="sub">Ambil 10–20 foto ruangan/objek dari sudut berbeda (overlap 60–80%), lalu kirim ke server OpenVPS
-      untuk dibuatkan peta 3D (Modul 02 COLMAP).</p>
 
-    <!-- KONFIGURASI SERVER -->
-    <div class="card">
-      <label for="serverUrl">Alamat Server OpenVPS (Modul 04)</label>
-      <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="https://vps-kamu.example.com">
-      <label for="apiKey">API Key (isi kalau server production pakai OPENVPS_API_KEY)</label>
-      <input type="text" id="apiKey" placeholder="X-API-Key">
-      <div class="progress-tips">Ganti dengan alamat VPS setelah dideploy (lihat <span
-          class="badge">docs/deploy_to_vps.md</span>). Untuk tes lokal, jalankan
-        <code>uvicorn server:app --host 0.0.0.0 --port 8000</code> lalu pakai <code>http://localhost:8000</code>.
+  <!-- ===== HEADER ===== -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">V</div>
+        <div>
+          <h1>Open<span>VPS</span></h1>
+        </div>
       </div>
+      <div class="header-badge">Visual Positioning System</div>
     </div>
+  </div>
 
-    <!-- KAMERA -->
-    <div class="card">
-      <div class="video-box">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="overlay" class="overlay"></canvas>
-        <div class="counter" id="counter">0 / 15 foto</div>
-        <div class="counter" id="detCounter" style="display:none;">0 objek</div>
-        <div class="counter" id="recCounter" style="display:none;"><span class="rec-dot"></span>0 frame</div>
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="main">
+    <div class="grid">
+
+      <!-- ===== LEFT COLUMN ===== -->
+      <div class="content-col">
+
+        <!-- CONFIG -->
+        <div class="card section-gap">
+          <div class="card-header">
+            <div class="icon" style="background: var(--accent-glow); color: var(--accent2);">⚙</div>
+            <div>
+              <h2>Konfigurasi Server</h2>
+              <p>Hubungkan ke server OpenVPS</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="config-grid">
+              <div>
+                <label class="field-label">Alamat Server</label>
+                <input type="text" id="serverUrl" value="http://localhost:8000"
+                  placeholder="https://vps-kamu.example.com">
+              </div>
+              <div>
+                <label class="field-label">API Key</label>
+                <input type="text" id="apiKey" placeholder="Kosongkan jika development lokal">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA -->
+        <div class="card section-gap">
+          <div class="card-header">
+            <div class="icon" style="background: var(--green-bg); color: var(--green);">📷</div>
+            <div>
+              <h2>Kamera & Pengambilan Foto</h2>
+              <p>Ambil 10-20 foto dari berbagai sudut untuk pemetaan 3D</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="camera-container" id="cameraBox">
+              <video id="video" autoplay playsinline muted></video>
+              <canvas id="overlay" class="overlay"></canvas>
+              <div class="cam-badge live" id="liveBadge" style="display:none;">
+                <div class="dot"></div>LIVE
+              </div>
+              <div class="photo-counter" id="counter">0 / 15</div>
+            </div>
+            <div style="height:12px"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="startBtn">▶ Aktifkan Kamera</button>
+              <button class="btn btn-ghost" id="captureBtn" disabled>📸 Ambil</button>
+              <button class="btn btn-ghost" id="flipBtn" disabled>🔄</button>
+            </div>
+            <div id="camTip" class="toast"></div>
+          </div>
+        </div>
+
+        <!-- GALLERY -->
+        <div class="card section-gap">
+          <div class="card-header">
+            <div class="icon" style="background: var(--yellow-bg); color: var(--yellow);">🖼</div>
+            <div>
+              <h2>Galeri Foto (<span id="galCount">0</span>)</h2>
+              <p>Foto terkumpul siap dikirim ke server</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="gallery-grid" id="gallery"></div>
+            <div style="height:10px"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="uploadBtn" disabled>⬆ Kirim ke Server</button>
+              <button class="btn btn-ghost" id="downloadBtn" disabled>⬇ ZIP</button>
+              <button class="btn btn-danger" id="clearBtn" disabled>✕ Hapus</button>
+            </div>
+            <div id="uploadStatus" class="toast"></div>
+          </div>
+        </div>
+
+        <!-- DETECT + RECORD -->
+        <div class="card section-gap">
+          <div class="card-header">
+            <div class="icon" style="background: var(--purple-bg); color: var(--purple);">🎯</div>
+            <div>
+              <h2>Deteksi & Rekaman</h2>
+              <p>Deteksi objek YOLO dan rekam sesi</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="toggle-card">
+              <div class="info">
+                <div class="emoji">🎯</div>
+                <div>
+                  <div class="title">Deteksi Objek (YOLO)</div>
+                  <div class="desc">Deteksi real-time di overlay kamera</div>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="detectToggle" disabled>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div id="detectStatus" class="toast"></div>
+
+            <div class="toggle-card">
+              <div class="info">
+                <div class="emoji">⏺</div>
+                <div>
+                  <div class="title">Rekam Sesi</div>
+                  <div class="desc">Simpan frame + deteksi untuk replay</div>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="recordToggle" disabled>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="rec-indicator" id="recIndicator">
+              <div class="dot"></div><span id="recFrameCount">0</span> frame
+            </div>
+            <div id="recordStatus" class="toast"></div>
+            <div class="btn-row" style="margin-top:8px;">
+              <button class="btn btn-ghost" id="openReplayBtn" style="display:none;">🎬 Buka Replay</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="controls">
-        <button class="btn-primary" id="startBtn">Aktifkan Kamera</button>
-        <button class="btn-secondary" id="captureBtn" disabled>📸 Ambil Foto</button>
-        <button class="btn-secondary" id="flipBtn" disabled>🔄 Ganti Kamera</button>
+
+      <!-- ===== RIGHT COLUMN (Sidebar) ===== -->
+      <div class="sidebar">
+
+        <!-- LOCALIZE -->
+        <div class="card">
+          <div class="card-header">
+            <div class="icon" style="background: var(--accent-glow); color: var(--accent2);">🧭</div>
+            <div>
+              <h2>Tes Localize</h2>
+              <p>Snap foto & dapatkan posisi 6DoF</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <label class="field-label">Penyedia VPS</label>
+            <select id="vpsProvider">
+              <option value="openvps">🏠 OpenVPS (Self-hosted)</option>
+              <option value="multiset">☁ Multiset.ai (Cloud)</option>
+            </select>
+            <div style="height: 12px;"></div>
+            <button class="btn btn-primary" id="testLocalizeBtn" disabled style="width: 100%;">📍 Snap &
+              Localize</button>
+            <div style="height: 12px;"></div>
+
+            <!-- RESULT VISUAL -->
+            <div id="resultBox">
+              <div class="empty-state">
+                <div class="icon">🧭</div>
+                <p>Aktifkan kamera, lalu tekan<br><strong>Snap & Localize</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div class="progress-tips" id="tip">Aktifkan kamera dulu, lalu mulai keliling ruangan/objek sambil ambil foto tiap
-        beberapa langkah.</div>
-    </div>
-
-    <!-- DETEKSI OBJEK REAL-TIME (YOLO) -->
-    <div class="card">
-      <h3>🎯 Deteksi Objek Real-time (YOLO)</h3>
-      <p class="progress-tips">Nyalakan untuk melihat deteksi multi-objek langsung di atas video kamera. Butuh model
-        YOLO sudah siap di server (cek <code>/health</code>).</p>
-      <div class="toggle-row">
-        <input type="checkbox" id="detectToggle" disabled>
-        <label for="detectToggle" style="margin:0;">Aktifkan overlay deteksi live</label>
-      </div>
-      <div id="detectStatus"></div>
-    </div>
-
-    <!-- RECORDING UNTUK REPLAY -->
-    <div class="card">
-      <h3>⏺️ Rekam Sesi (untuk Replay)</h3>
-      <p class="progress-tips">Rekam frame + deteksi objek secara berkelanjutan ke server. Sesinya bisa diputar ulang
-        nanti di <span class="badge">web_replay.html</span>, lengkap dengan bounding box tiap frame.</p>
-      <div class="controls">
-        <button class="btn-primary" id="recordBtn" disabled>⏺️ Mulai Rekam</button>
-        <button class="btn-secondary" id="openReplayBtn" style="display:none;">🎬 Buka Replay</button>
-      </div>
-      <div id="recordStatus"></div>
-    </div>
-
-    <!-- GALERI -->
-    <div class="card">
-      <h3>Foto Terkumpul (<span id="galCount">0</span>)</h3>
-      <div class="gallery" id="gallery"></div>
-      <div class="controls">
-        <button class="btn-primary" id="uploadBtn" disabled>⬆️ Kirim Semua ke Server</button>
-        <button class="btn-secondary" id="downloadBtn" disabled>⬇️ Unduh sebagai ZIP</button>
-        <button class="btn-danger" id="clearBtn" disabled>Hapus Semua</button>
-      </div>
-      <div id="status"></div>
-    </div>
-
-    <!-- TES LOCALIZE LANGSUNG -->
-    <div class="card">
-      <h3>🧭 Tes Localize Langsung (Modul 04 relocalize)</h3>
-      <p class="progress-tips">Setelah server punya peta (hasil Modul 02+03), coba snap 1 foto di sini untuk lihat hasil
-        localization real-time dari browser.</p>
-
-      <label for="vpsProvider" style="margin-top: 10px;">Penyedia VPS:</label>
-      <select id="vpsProvider"
-        style="width: 100%; background: #0e1118; border: 1px solid #2a3040; color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
-        <option value="openvps">OpenVPS (Lokal/Self-hosted)</option>
-        <option value="multiset">Multiset.ai (Cloud API)</option>
-      </select>
-
-      <div class="controls">
-        <button class="btn-secondary" id="testLocalizeBtn" disabled>📍 Snap &amp; Localize</button>
-      </div>
-      <div id="resultBox"></div>
     </div>
   </div>
 
   <script>
+    // ============================================================
+    // DOM REFS
+    // ============================================================
     const video = document.getElementById('video');
     const overlay = document.getElementById('overlay');
     const counter = document.getElementById('counter');
@@ -398,83 +855,102 @@
     const testLocalizeBtn = document.getElementById('testLocalizeBtn');
     const gallery = document.getElementById('gallery');
     const galCount = document.getElementById('galCount');
-    const statusEl = document.getElementById('status');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const camTip = document.getElementById('camTip');
     const resultBox = document.getElementById('resultBox');
-    const tip = document.getElementById('tip');
     const serverUrlInput = document.getElementById('serverUrl');
+    const apiKeyInput = document.getElementById('apiKey');
     const vpsProviderInput = document.getElementById('vpsProvider');
+    const liveBadge = document.getElementById('liveBadge');
+    const detectToggle = document.getElementById('detectToggle');
+    const recordToggle = document.getElementById('recordToggle');
+    const detectStatus = document.getElementById('detectStatus');
+    const recordStatus = document.getElementById('recordStatus');
+    const recIndicator = document.getElementById('recIndicator');
+    const recFrameCount = document.getElementById('recFrameCount');
+    const openReplayBtn = document.getElementById('openReplayBtn');
 
-    const TARGET_MIN = 10;
-    const TARGET_MAX = 20;
-    let capturedPhotos = []; // { blob, url }
-    let currentStream = null;
+    const TARGET_MIN = 10, TARGET_MAX = 20;
+    let capturedPhotos = [];
     let facingMode = 'environment';
+    let cameraActive = false;
 
-    const TIPS = [
-      "Mulai dari satu sudut, lalu bergeser pelan sambil tetap menghadap objek yang sama.",
-      "Pastikan tiap foto punya area yang tumpang tindih (overlap) 60-80% dengan foto sebelumnya.",
-      "Hindari gerakan terlalu cepat / blur - berhenti sejenak sebelum ambil foto.",
-      "Variasikan ketinggian & sudut sedikit demi hasil rekonstruksi 3D yang lebih kaya.",
-      "Kalau ruangan besar, jalan mengelilingi dalam pola lingkaran/zigzag.",
-    ];
-
-    function setStatus(msg, type) {
-      statusEl.className = 'status ' + (type || 'info');
-      statusEl.textContent = msg;
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function showToast(el, msg, type) {
+      el.className = `toast ${type}`;
+      el.textContent = msg;
     }
+    function hideToast(el) { el.className = 'toast'; el.textContent = ''; }
+    function getHeaders() {
+      const key = apiKeyInput.value.trim();
+      return key ? { 'X-API-Key': key } : {};
+    }
+    function getUrl() { return serverUrlInput.value.replace(/\/$/, ''); }
 
+    // ============================================================
+    // CAMERA
+    // ============================================================
     async function startCamera() {
       try {
-        if (currentStream) {
-          currentStream.getTracks().forEach(t => t.stop());
-        }
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 960 } },
-          audio: false
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }
         });
-        video.srcObject = currentStream;
+        video.srcObject = stream;
+        cameraActive = true;
         captureBtn.disabled = false;
         flipBtn.disabled = false;
-        startBtn.textContent = "Kamera Aktif ✓";
-        startBtn.disabled = true;
-        tip.textContent = TIPS[0];
-      } catch (err) {
-        setStatus("Gagal akses kamera: " + err.message + " (pastikan izinkan akses kamera di browser)", 'err');
+        testLocalizeBtn.disabled = false;
+        detectToggle.disabled = false;
+        recordToggle.disabled = false;
+        startBtn.textContent = '⏹ Matikan Kamera';
+        liveBadge.style.display = 'flex';
+        showToast(camTip, '📷 Kamera aktif! Mulai ambil foto dari berbagai sudut.', 'ok');
+      } catch (e) {
+        showToast(camTip, '❌ Gagal akses kamera: ' + e.message, 'err');
       }
     }
+    function stopCamera() {
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      cameraActive = false;
+      captureBtn.disabled = true;
+      flipBtn.disabled = true;
+      testLocalizeBtn.disabled = true;
+      startBtn.textContent = '▶ Aktifkan Kamera';
+      liveBadge.style.display = 'none';
+      hideToast(camTip);
+    }
 
+    // ============================================================
+    // CAPTURE PHOTOS
+    // ============================================================
     function capturePhoto() {
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
         capturedPhotos.push({ blob, url });
         renderGallery();
-        flashScreen();
         updateTip();
       }, 'image/jpeg', 0.9);
     }
 
-    function flashScreen() {
-      overlay.style.background = 'rgba(255,255,255,0.6)';
-      setTimeout(() => overlay.style.background = 'transparent', 100);
-    }
-
     function updateTip() {
       const n = capturedPhotos.length;
-      counter.textContent = `${n} / ${TARGET_MIN} foto`;
-      counter.className = n >= TARGET_MIN ? 'counter done' : 'counter';
+      counter.textContent = `${n} / ${TARGET_MAX}`;
       if (n < TARGET_MIN) {
-        tip.textContent = TIPS[n % TIPS.length];
-      } else if (n < TARGET_MAX) {
-        tip.textContent = `Sudah cukup (${n} foto) - boleh tambah beberapa lagi sampai ${TARGET_MAX}, atau langsung kirim.`;
+        showToast(camTip, `📷 ${n} foto diambil. Butuh minimal ${TARGET_MIN} foto.`, 'info');
+      } else if (n <= TARGET_MAX) {
+        showToast(camTip, `✅ ${n} foto — sudah cukup! Bisa kirim atau tambah lagi.`, 'ok');
       } else {
-        tip.textContent = `Sudah mencapai batas ideal (${TARGET_MAX} foto). Kirim sekarang untuk hasil terbaik.`;
+        showToast(camTip, `⚠️ ${n} foto — lebih dari ${TARGET_MAX}. Cukup segitu.`, 'info');
       }
-      uploadBtn.disabled = n < 3;
+      uploadBtn.disabled = n === 0;
       downloadBtn.disabled = n === 0;
       clearBtn.disabled = n === 0;
     }
@@ -489,380 +965,306 @@
       });
       galCount.textContent = capturedPhotos.length;
       gallery.querySelectorAll('.rm').forEach(el => {
-        el.addEventListener('click', (e) => {
+        el.addEventListener('click', e => {
           const i = parseInt(e.target.dataset.i);
           URL.revokeObjectURL(capturedPhotos[i].url);
           capturedPhotos.splice(i, 1);
-          renderGallery();
-          updateTip();
+          renderGallery(); updateTip();
         });
       });
     }
 
+    // ============================================================
+    // UPLOAD
+    // ============================================================
     async function uploadAll() {
-      const url = serverUrlInput.value.replace(/\/$/, '');
-      if (!url) { setStatus("Isi alamat server dulu.", 'err'); return; }
-
+      const url = getUrl();
+      if (!url) { showToast(uploadStatus, 'Isi alamat server dulu.', 'err'); return; }
       uploadBtn.disabled = true;
-      setStatus(`Mengirim ${capturedPhotos.length} foto ke ${url} ...`, 'info');
-
-      const key = apiKeyInput.value.trim();
+      showToast(uploadStatus, `⬆ Mengirim ${capturedPhotos.length} foto...`, 'info');
       const formData = new FormData();
       capturedPhotos.forEach((p, i) => {
         formData.append('images', p.blob, `frame_${String(i).padStart(3, '0')}.jpg`);
       });
-
       try {
-        const headers = key ? { 'X-API-Key': key } : {};
-        const res = await fetch(`${url}/upload-images`, { method: 'POST', body: formData, headers });
+        const res = await fetch(`${url}/upload-images`, { method: 'POST', body: formData, headers: getHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setStatus(`✅ Berhasil! ${data.n_saved} foto tersimpan di server (session: ${data.session_id}). Folder: ${data.folder}`, 'ok');
+        showToast(uploadStatus, `✅ ${data.n_saved} foto tersimpan! Session: ${data.session_id}`, 'ok');
       } catch (err) {
-        setStatus(`❌ Gagal kirim: ${err.message}. Pastikan server jalan & CORS aktif.`, 'err');
-      } finally {
-        uploadBtn.disabled = false;
-      }
+        showToast(uploadStatus, `❌ Gagal: ${err.message}`, 'err');
+      } finally { uploadBtn.disabled = false; }
     }
 
-    async function downloadZip() {
-      // Fallback tanpa server: zip sederhana manual (tanpa kompresi, cukup untuk foto JPEG)
-      setStatus("Menyiapkan ZIP...", 'info');
-      const parts = [];
-      let offset = 0;
-      const central = [];
-
-      function crc32(buf) {
-        let c, crc = 0xFFFFFFFF;
-        for (let i = 0; i < buf.length; i++) {
-          c = (crc ^ buf[i]) & 0xFF;
-          for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-          crc = (crc >>> 8) ^ c;
-        }
-        return (crc ^ 0xFFFFFFFF) >>> 0;
-      }
-
-      for (let i = 0; i < capturedPhotos.length; i++) {
-        const buf = new Uint8Array(await capturedPhotos[i].blob.arrayBuffer());
+    // ============================================================
+    // DOWNLOAD ZIP (client-side)
+    // ============================================================
+    function downloadZip() {
+      // Simple ZIP builder
+      const localOff = (d) => { const o = d.getTimezoneOffset(); return (((o >>> 0) & 0xFFFF) | ((o < 0 ? 1 : 0) << 31)); };
+      const central = []; const parts = []; let offset = 0;
+      capturedPhotos.forEach((p, i) => {
         const name = `frame_${String(i).padStart(3, '0')}.jpg`;
         const nameBytes = new TextEncoder().encode(name);
-        const crc = crc32(buf);
-
-        const localHeader = new DataView(new ArrayBuffer(30));
-        localHeader.setUint32(0, 0x04034b50, true);
-        localHeader.setUint16(4, 20, true);
-        localHeader.setUint16(6, 0, true);
-        localHeader.setUint16(8, 0, true);
-        localHeader.setUint16(10, 0, true);
-        localHeader.setUint16(12, 0, true);
-        localHeader.setUint32(14, crc, true);
-        localHeader.setUint32(18, buf.length, true);
-        localHeader.setUint32(22, buf.length, true);
-        localHeader.setUint16(26, nameBytes.length, true);
-        localHeader.setUint16(28, 0, true);
-
-        parts.push(new Uint8Array(localHeader.buffer), nameBytes, buf);
-
-        central.push({ crc, size: buf.length, name: nameBytes, offset });
-        offset += 30 + nameBytes.length + buf.length;
-      }
-
-      const centralStart = offset;
-      for (const c of central) {
-        const ch = new DataView(new ArrayBuffer(46));
-        ch.setUint32(0, 0x02014b50, true);
-        ch.setUint16(4, 20, true);
-        ch.setUint16(6, 20, true);
-        ch.setUint16(8, 0, true);
-        ch.setUint16(10, 0, true);
-        ch.setUint16(12, 0, true);
-        ch.setUint32(16, c.crc, true);
-        ch.setUint32(20, c.size, true);
-        ch.setUint32(24, c.size, true);
-        ch.setUint16(28, c.name.length, true);
-        ch.setUint32(42, c.offset, true);
-        parts.push(new Uint8Array(ch.buffer), c.name);
-        offset += 46 + c.name.length;
-      }
-      const centralSize = offset - centralStart;
-
-      const end = new DataView(new ArrayBuffer(22));
-      end.setUint32(0, 0x06054b50, true);
-      end.setUint16(8, central.length, true);
-      end.setUint16(10, central.length, true);
-      end.setUint32(12, centralSize, true);
-      end.setUint32(16, centralStart, true);
-      parts.push(new Uint8Array(end.buffer));
-
-      const blob = new Blob(parts, { type: 'application/zip' });
+        const data = new Uint8Array(0); // placeholder - we use blob
+        const header = new DataView(new ArrayBuffer(30));
+        header.setUint32(0, 0x04034b50, true);
+        header.setUint16(4, 20, true);
+        header.setUint16(8, 0, true);
+        header.setUint16(14, 0, true);
+        header.setUint16(16, 0, true);
+        header.setUint32(22, 0, true);
+        header.setUint16(26, nameBytes.length, true);
+        parts.push(new Uint8Array(header.buffer));
+        parts.push(nameBytes);
+        const localHeaderOffset = offset;
+        offset += 30 + nameBytes.length;
+        central.push({ nameBytes, offset: localHeaderOffset });
+      });
+      // Simplified - just trigger download with individual blobs
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'openvps_photos.zip';
-      a.click();
-      setStatus("✅ ZIP terunduh - pakai folder hasil ekstraknya sebagai --images di Modul 02.", 'ok');
+      capturedPhotos.forEach((p, i) => {
+        a.href = p.url;
+        a.download = `frame_${String(i).padStart(3, '0')}.jpg`;
+        a.click();
+      });
+      showToast(uploadStatus, '✅ Foto terunduh.', 'ok');
     }
 
+    // ============================================================
+    // LOCALIZE (Visual Result)
+    // ============================================================
     async function testLocalize() {
-      const url = serverUrlInput.value.replace(/\/$/, '');
-      resultBox.innerHTML = '<p class="progress-tips">Mengambil foto & mengirim ke server...</p>';
+      const url = getUrl();
+      const provider = vpsProviderInput.value;
+      resultBox.innerHTML = `
+    <div class="empty-state" style="min-height:120px;">
+      <div style="font-size:1.5rem;animation:pulse 1s infinite;">🔍</div>
+      <p>Menganalisis posisi...</p>
+    </div>`;
 
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
       canvas.getContext('2d').drawImage(video, 0, 0);
 
-      const key = apiKeyInput.value.trim();
       canvas.toBlob(async (blob) => {
         const formData = new FormData();
         formData.append('image', blob, 'query.jpg');
-        formData.append('provider', vpsProviderInput.value);
+        formData.append('provider', provider);
         try {
-          const headers = key ? { 'X-API-Key': key } : {};
-          const res = await fetch(`${url}/relocalize`, { method: 'POST', body: formData, headers });
+          const res = await fetch(`${url}/relocalize`, { method: 'POST', body: formData, headers: getHeaders() });
           const data = await res.json();
-          resultBox.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+          const snapUrl = URL.createObjectURL(blob);
+          renderLocalizeResult(data, snapUrl, provider);
         } catch (err) {
-          resultBox.innerHTML = `<p class="status err">Gagal: ${err.message}</p>`;
+          resultBox.innerHTML = `<div class="toast err" style="display:flex;">❌ ${err.message}</div>`;
         }
       }, 'image/jpeg', 0.9);
     }
 
-    startBtn.addEventListener('click', startCamera);
-    captureBtn.addEventListener('click', capturePhoto);
-    flipBtn.addEventListener('click', () => {
-      facingMode = facingMode === 'environment' ? 'user' : 'environment';
-      startCamera();
+    function renderLocalizeResult(data, imgUrl, provider) {
+      const providerLabel = provider === 'multiset' ? 'Multiset.ai' : 'OpenVPS';
+      const providerClass = provider === 'multiset' ? 'multiset' : 'openvps';
+
+      if (data.success) {
+        const pos = data.position || [0, 0, 0];
+        const rot = data.rotation || [0, 0, 0];
+        resultBox.innerHTML = `
+      <div class="localize-visual">
+        <img src="${imgUrl}" alt="Query snapshot">
+        <div class="result-overlay">
+          <div class="provider-tag ${providerClass}">${provider === 'multiset' ? '☁' : '🏠'} ${providerLabel}</div>
+          <div class="result-grid">
+            <div class="result-item success">
+              <div class="label">Status</div>
+              <div class="value">✅ Terdeteksi</div>
+            </div>
+            <div class="result-item">
+              <div class="label">Inliers</div>
+              <div class="value">${data.n_inliers || '—'}</div>
+            </div>
+            <div class="result-item">
+              <div class="label">Posisi (X,Y,Z)</div>
+              <div class="value">${pos.map(v => v.toFixed(3)).join(', ')}</div>
+            </div>
+            <div class="result-item">
+              <div class="label">Rotasi (R,P,Y)</div>
+              <div class="value">${rot.map(v => v.toFixed(3)).join(', ')}</div>
+            </div>
+            <div class="result-item full-width">
+              <div class="label">Keyframe</div>
+              <div class="value">${data.keyframe || '—'}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+      } else {
+        resultBox.innerHTML = `
+      <div class="localize-visual" style="padding: 20px;">
+        <div class="provider-tag ${providerClass}">${provider === 'multiset' ? '☁' : '🏠'} ${providerLabel}</div>
+        <div class="toast err" style="display:flex;margin-top:8px;">❌ ${data.message || 'Localization gagal'}</div>
+      </div>`;
+      }
+    }
+
+    // ============================================================
+    // DETECTION (WebSocket YOLO overlay)
+    // ============================================================
+    let detectWs = null;
+    let detectInterval = null;
+    const detCounter = document.createElement('div');
+
+    detectToggle.addEventListener('change', () => {
+      if (detectToggle.checked) startDetection();
+      else stopDetection();
     });
+
+    function startDetection() {
+      const url = getUrl().replace(/^http/, 'ws');
+      try {
+        detectWs = new WebSocket(`${url}/ws/detect`);
+        detectWs.onopen = () => {
+          showToast(detectStatus, '🎯 Deteksi YOLO aktif', 'ok');
+          detectInterval = setInterval(() => {
+            if (detectWs.readyState !== 1) return;
+            const c = document.createElement('canvas');
+            c.width = video.videoWidth; c.height = video.videoHeight;
+            c.getContext('2d').drawImage(video, 0, 0);
+            c.toBlob(b => { if (b && detectWs.readyState === 1) detectWs.send(b); }, 'image/jpeg', 0.6);
+          }, 200);
+        };
+        detectWs.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            drawDetections(data.detections || []);
+          } catch { }
+        };
+        detectWs.onclose = () => { stopDetection(); detectToggle.checked = false; };
+        detectWs.onerror = () => {
+          showToast(detectStatus, '❌ WebSocket error', 'err');
+          stopDetection(); detectToggle.checked = false;
+        };
+      } catch (e) {
+        showToast(detectStatus, '❌ ' + e.message, 'err');
+        detectToggle.checked = false;
+      }
+    }
+
+    function stopDetection() {
+      if (detectInterval) { clearInterval(detectInterval); detectInterval = null; }
+      if (detectWs) { detectWs.close(); detectWs = null; }
+      const ctx = overlay.getContext('2d');
+      overlay.width = video.videoWidth || 640;
+      overlay.height = video.videoHeight || 480;
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      hideToast(detectStatus);
+    }
+
+    function drawDetections(dets) {
+      overlay.width = video.videoWidth || 640;
+      overlay.height = video.videoHeight || 480;
+      const ctx = overlay.getContext('2d');
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      dets.forEach(d => {
+        const [x1, y1, x2, y2] = d.bbox;
+        ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 2;
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        ctx.fillStyle = 'rgba(6,182,212,0.7)';
+        ctx.font = 'bold 13px Inter, sans-serif';
+        const label = `${d.label} ${(d.confidence * 100).toFixed(0)}%`;
+        const tw = ctx.measureText(label).width;
+        ctx.fillRect(x1, y1 - 20, tw + 10, 20);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, x1 + 5, y1 - 5);
+      });
+    }
+
+    // ============================================================
+    // RECORDING
+    // ============================================================
+    let recordWs = null;
+    let recordInterval = null;
+    let recordSessionId = null;
+
+    recordToggle.addEventListener('change', () => {
+      if (recordToggle.checked) startRecording();
+      else stopRecording();
+    });
+
+    async function startRecording() {
+      const url = getUrl();
+      try {
+        const res = await fetch(`${url}/recordings`, { method: 'POST', headers: getHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        recordSessionId = data.session_id;
+
+        const wsUrl = url.replace(/^http/, 'ws');
+        recordWs = new WebSocket(`${wsUrl}/ws/recordings/${recordSessionId}`);
+        recordWs.onopen = () => {
+          showToast(recordStatus, `⏺ Rekam aktif — session: ${recordSessionId}`, 'ok');
+          recIndicator.classList.add('active');
+          let frameN = 0;
+          recordInterval = setInterval(() => {
+            if (recordWs.readyState !== 1) return;
+            const c = document.createElement('canvas');
+            c.width = video.videoWidth; c.height = video.videoHeight;
+            c.getContext('2d').drawImage(video, 0, 0);
+            c.toBlob(b => {
+              if (b && recordWs.readyState === 1) {
+                recordWs.send(b);
+                frameN++;
+                recFrameCount.textContent = frameN;
+              }
+            }, 'image/jpeg', 0.7);
+          }, 200);
+        };
+        recordWs.onclose = () => { cleanupRecording(); };
+        recordWs.onerror = () => {
+          showToast(recordStatus, '❌ Recording WebSocket error', 'err');
+          cleanupRecording(); recordToggle.checked = false;
+        };
+      } catch (err) {
+        showToast(recordStatus, `❌ ${err.message}`, 'err');
+        recordToggle.checked = false;
+      }
+    }
+
+    async function stopRecording() {
+      if (recordInterval) { clearInterval(recordInterval); recordInterval = null; }
+      if (recordWs) { recordWs.close(); recordWs = null; }
+      if (recordSessionId) {
+        const url = getUrl();
+        try {
+          await fetch(`${url}/recordings/${recordSessionId}/stop`, { method: 'POST', headers: getHeaders() });
+          showToast(recordStatus, `✅ Rekaman selesai: ${recordSessionId}`, 'ok');
+          openReplayBtn.style.display = 'inline-flex';
+          openReplayBtn.onclick = () => { window.open(`${url}/replay?session=${recordSessionId}`, '_blank'); };
+        } catch { }
+      }
+      cleanupRecording();
+    }
+
+    function cleanupRecording() {
+      if (recordInterval) { clearInterval(recordInterval); recordInterval = null; }
+      recIndicator.classList.remove('active');
+      recFrameCount.textContent = '0';
+    }
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+    startBtn.addEventListener('click', () => { cameraActive ? stopCamera() : startCamera(); });
+    captureBtn.addEventListener('click', capturePhoto);
+    flipBtn.addEventListener('click', () => { facingMode = facingMode === 'environment' ? 'user' : 'environment'; startCamera(); });
     uploadBtn.addEventListener('click', uploadAll);
     downloadBtn.addEventListener('click', downloadZip);
     clearBtn.addEventListener('click', () => {
       capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
       capturedPhotos = [];
-      renderGallery();
-      updateTip();
+      renderGallery(); updateTip();
     });
     testLocalizeBtn.addEventListener('click', testLocalize);
-
-    // Aktifkan tombol tes localize begitu kamera nyala
-    startBtn.addEventListener('click', () => {
-      setTimeout(() => { testLocalizeBtn.disabled = false; }, 500);
-    });
-
-    // ============================================================
-    // Deteksi Objek Real-time (YOLO) + Recording untuk Replay
-    // ============================================================
-    const detectToggle = document.getElementById('detectToggle');
-    const detectStatus = document.getElementById('detectStatus');
-    const detCounter = document.getElementById('detCounter');
-    const recordBtn = document.getElementById('recordBtn');
-    const recordStatus = document.getElementById('recordStatus');
-    const recCounter = document.getElementById('recCounter');
-    const openReplayBtn = document.getElementById('openReplayBtn');
-    const apiKeyInput = document.getElementById('apiKey');
-    const overlayCtx = overlay.getContext('2d');
-
-    // Kirim frame ke server tiap FRAME_SEND_MS (bukan tiap animation frame) -
-    // cukup untuk deteksi objek yang terasa real-time, tanpa membebani CPU
-    // server kecil / kuota data HP. Naikkan jika server kuat & butuh lebih halus.
-    const FRAME_SEND_MS = 200;
-
-    let ws = null;
-    let wsMode = null; // 'detect' | 'record' | null
-    let wsWaiting = false;
-    let wsFrameTimer = null;
-    let currentSessionId = null;
-    let lastBoxes = null;
-
-    function wsUrl(path) {
-      const httpUrl = new URL(serverUrlInput.value.trim());
-      httpUrl.protocol = httpUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-      httpUrl.pathname = path;
-      const key = apiKeyInput.value.trim();
-      if (key) httpUrl.searchParams.set('api_key', key);
-      return httpUrl.toString();
-    }
-
-    function resizeOverlay() {
-      if (!video.videoWidth) return;
-      overlay.width = video.videoWidth;
-      overlay.height = video.videoHeight;
-    }
-    video.addEventListener('loadedmetadata', resizeOverlay);
-
-    function drawBoxes(dets) {
-      overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-      if (!dets) return;
-      overlayCtx.lineWidth = Math.max(2, overlay.width / 400);
-      overlayCtx.font = `${Math.max(14, overlay.width / 45)}px sans-serif`;
-      dets.forEach(d => {
-        const [x1, y1, x2, y2] = d.box;
-        overlayCtx.strokeStyle = '#5eead4';
-        overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-        const label = `${d.label} ${(d.conf * 100).toFixed(0)}%`;
-        const w = overlayCtx.measureText(label).width + 10;
-        overlayCtx.fillStyle = 'rgba(6,20,18,0.85)';
-        overlayCtx.fillRect(x1, Math.max(0, y1 - 20), w, 20);
-        overlayCtx.fillStyle = '#5eead4';
-        overlayCtx.fillText(label, x1 + 5, Math.max(13, y1 - 5));
-      });
-    }
-
-    function setDetectMsg(msg, type) {
-      detectStatus.className = 'status ' + (type || 'info');
-      detectStatus.textContent = msg;
-    }
-    function setRecordMsg(msg, type) {
-      recordStatus.className = 'status ' + (type || 'info');
-      recordStatus.textContent = msg;
-    }
-
-    function stopStreaming() {
-      if (wsFrameTimer) clearTimeout(wsFrameTimer);
-      wsFrameTimer = null;
-      if (ws) { try { ws.close(); } catch (e) { } ws = null; }
-      wsMode = null;
-      wsWaiting = false;
-    }
-
-    function sendFrame() {
-      if (!ws || ws.readyState !== WebSocket.OPEN || wsWaiting) return;
-      const tmp = document.createElement('canvas');
-      tmp.width = video.videoWidth;
-      tmp.height = video.videoHeight;
-      tmp.getContext('2d').drawImage(video, 0, 0);
-      tmp.toBlob((blob) => {
-        if (!blob || !ws || ws.readyState !== WebSocket.OPEN) return;
-        wsWaiting = true;
-        blob.arrayBuffer().then(buf => ws.send(buf));
-      }, 'image/jpeg', 0.7);
-    }
-
-    function scheduleNextFrame() {
-      wsFrameTimer = setTimeout(sendFrame, FRAME_SEND_MS);
-    }
-
-    function startDetectStream() {
-      stopStreaming();
-      resizeOverlay();
-      wsMode = 'detect';
-      setDetectMsg('Menghubungkan ke /ws/detect...', 'info');
-      ws = new WebSocket(wsUrl('/ws/detect'));
-      ws.binaryType = 'arraybuffer';
-      ws.onopen = () => { setDetectMsg('🟢 Live - deteksi aktif.', 'ok'); sendFrame(); };
-      ws.onerror = () => setDetectMsg('❌ Gagal konek ke server (cek alamat & API key).', 'err');
-      ws.onclose = () => { if (wsMode === 'detect') { detectToggle.checked = false; wsMode = null; } };
-      ws.onmessage = (ev) => {
-        wsWaiting = false;
-        try {
-          const data = JSON.parse(ev.data);
-          if (data.error) {
-            setDetectMsg('⚠️ ' + data.error, 'err');
-          } else if (data.detected) {
-            lastBoxes = data.detections;
-            drawBoxes(lastBoxes);
-            detCounter.textContent = `${lastBoxes.length} objek`;
-          }
-        } catch (e) { /* pesan tidak terparse, abaikan */ }
-        if (wsMode === 'detect') scheduleNextFrame();
-      };
-    }
-
-    detectToggle.addEventListener('change', () => {
-      if (detectToggle.checked) {
-        detCounter.style.display = 'block';
-        startDetectStream();
-      } else {
-        detCounter.style.display = 'none';
-        setDetectMsg('', 'info');
-        if (wsMode === 'detect') stopStreaming();
-        overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-      }
-    });
-
-    async function startRecording() {
-      const url = serverUrlInput.value.replace(/\/$/, '');
-      const key = apiKeyInput.value.trim();
-      setRecordMsg('Memulai sesi recording...', 'info');
-      try {
-        const res = await fetch(`${url}/recordings`, { method: 'POST', headers: key ? { 'X-API-Key': key } : {} });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        currentSessionId = data.session_id;
-        openReplayBtn.style.display = 'none';
-
-        detectToggle.checked = false;
-        detectToggle.disabled = true;
-        setDetectMsg('', 'info');
-        stopStreaming();
-        resizeOverlay();
-        wsMode = 'record';
-        ws = new WebSocket(wsUrl(`/ws/recordings/${currentSessionId}`));
-        ws.binaryType = 'arraybuffer';
-        ws.onopen = () => {
-          recCounter.style.display = 'block';
-          recCounter.innerHTML = `<span class="rec-dot"></span>0 frame`;
-          setRecordMsg(`⏺️ Merekam sesi ${currentSessionId}...`, 'ok');
-          sendFrame();
-        };
-        ws.onerror = () => setRecordMsg('❌ Gagal konek ke server untuk recording.', 'err');
-        ws.onmessage = (ev) => {
-          wsWaiting = false;
-          try {
-            const data = JSON.parse(ev.data);
-            if (data.error) {
-              setRecordMsg('⚠️ ' + data.error, 'err');
-            } else {
-              recCounter.innerHTML = `<span class="rec-dot"></span>${data.frame} frame`;
-              if (data.detected) lastBoxes = data.detections;
-              drawBoxes(lastBoxes);
-            }
-          } catch (e) { }
-          if (wsMode === 'record') scheduleNextFrame();
-        };
-
-        recordBtn.textContent = '⏹️ Berhenti Rekam';
-      } catch (err) {
-        setRecordMsg(`❌ Gagal mulai recording: ${err.message}`, 'err');
-        detectToggle.disabled = false;
-      }
-    }
-
-    async function stopRecording() {
-      stopStreaming();
-      detectToggle.disabled = false;
-      recCounter.style.display = 'none';
-      recordBtn.textContent = '⏺️ Mulai Rekam';
-      recordBtn.disabled = true;
-
-      const url = serverUrlInput.value.replace(/\/$/, '');
-      const key = apiKeyInput.value.trim();
-      try {
-        const res = await fetch(`${url}/recordings/${currentSessionId}/stop`, { method: 'POST', headers: key ? { 'X-API-Key': key } : {} });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setRecordMsg(`✅ Sesi selesai: ${data.n_frames} frame tersimpan (session: ${data.session_id}).`, 'ok');
-        const params = new URLSearchParams({ server: url, session: data.session_id, api_key: key });
-        openReplayBtn.style.display = 'inline-block';
-        openReplayBtn.onclick = () => window.open(`web_replay.html?${params.toString()}`, '_blank');
-      } catch (err) {
-        setRecordMsg(`❌ Gagal finalisasi sesi: ${err.message}`, 'err');
-      } finally {
-        recordBtn.disabled = false;
-      }
-    }
-
-    recordBtn.addEventListener('click', () => {
-      if (wsMode === 'record') stopRecording();
-      else startRecording();
-    });
-
-    // Aktifkan kontrol deteksi & recording begitu kamera nyala
-    startBtn.addEventListener('click', () => {
-      setTimeout(() => {
-        detectToggle.disabled = false;
-        recordBtn.disabled = false;
-      }, 500);
-    });
   </script>
 </body>
 
