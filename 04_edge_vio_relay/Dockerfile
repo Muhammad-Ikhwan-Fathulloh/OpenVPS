@@ -11,7 +11,8 @@ WORKDIR /app
 # 03_hloc_lite dibutuhkan server.py (sys.path.append ke folder ini)
 COPY 03_hloc_lite /app/03_hloc_lite
 COPY 04_edge_vio_relay/requirements.txt /app/04_edge_vio_relay/requirements.txt
-RUN pip install --no-cache-dir -r /app/04_edge_vio_relay/requirements.txt
+RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r /app/04_edge_vio_relay/requirements.txt
 
 COPY 04_edge_vio_relay /app/04_edge_vio_relay
 WORKDIR /app/04_edge_vio_relay

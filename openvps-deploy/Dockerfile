@@ -11,7 +11,8 @@ WORKDIR /app
 # Folder ini sudah berdiri sendiri (hloc_lite.py sudah disalin ke sini),
 # jadi tidak perlu lagi COPY dari folder modul lain.
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 
