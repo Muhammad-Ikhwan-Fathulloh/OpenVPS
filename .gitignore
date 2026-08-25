@@ -1,0 +1,21 @@
+# Secrets
+.env
+*.env
+!.env.example
+
+# Data hasil capture/recording (bisa besar, jangan masuk git)
+04_edge_vio_relay/collected_photos/
+04_edge_vio_relay/recordings/
+02_colmap_mapper/output_map/
+
+# Model YOLO ter-download otomatis oleh ultralytics
+*.pt
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# OS
+.DS_Store

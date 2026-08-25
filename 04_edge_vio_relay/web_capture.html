@@ -142,6 +142,17 @@
     color: #a5f3dc;
   }
   h3 { font-size: 1rem; margin: 0 0 10px; }
+
+  .rec-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); margin-right: 6px; vertical-align: middle;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.88rem; }
+  .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+  #detCounter { top: 10px; left: auto; right: 10px; }
+  #recCounter { top: auto; bottom: 10px; left: 10px; }
 </style>
 </head>
 <body>
@@ -153,6 +164,8 @@
   <div class="card">
     <label for="serverUrl">Alamat Server OpenVPS (Modul 04)</label>
     <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="https://vps-kamu.example.com">
+    <label for="apiKey">API Key (isi kalau server production pakai OPENVPS_API_KEY)</label>
+    <input type="text" id="apiKey" placeholder="X-API-Key">
     <div class="progress-tips">Ganti dengan alamat VPS setelah dideploy (lihat <span class="badge">docs/deploy_to_vps.md</span>). Untuk tes lokal, jalankan <code>uvicorn server:app --host 0.0.0.0 --port 8000</code> lalu pakai <code>http://localhost:8000</code>.</div>
   </div>
 
@@ -162,6 +175,8 @@
       <video id="video" autoplay playsinline muted></video>
       <canvas id="overlay" class="overlay"></canvas>
       <div class="counter" id="counter">0 / 15 foto</div>
+      <div class="counter" id="detCounter" style="display:none;">0 objek</div>
+      <div class="counter" id="recCounter" style="display:none;"><span class="rec-dot"></span>0 frame</div>
     </div>
     <div class="controls">
       <button class="btn-primary" id="startBtn">Aktifkan Kamera</button>
@@ -169,6 +184,28 @@
       <button class="btn-secondary" id="flipBtn" disabled>🔄 Ganti Kamera</button>
     </div>
     <div class="progress-tips" id="tip">Aktifkan kamera dulu, lalu mulai keliling ruangan/objek sambil ambil foto tiap beberapa langkah.</div>
+  </div>
+
+  <!-- DETEKSI OBJEK REAL-TIME (YOLO) -->
+  <div class="card">
+    <h3>🎯 Deteksi Objek Real-time (YOLO)</h3>
+    <p class="progress-tips">Nyalakan untuk melihat deteksi multi-objek langsung di atas video kamera. Butuh model YOLO sudah siap di server (cek <code>/health</code>).</p>
+    <div class="toggle-row">
+      <input type="checkbox" id="detectToggle" disabled>
+      <label for="detectToggle" style="margin:0;">Aktifkan overlay deteksi live</label>
+    </div>
+    <div id="detectStatus"></div>
+  </div>
+
+  <!-- RECORDING UNTUK REPLAY -->
+  <div class="card">
+    <h3>⏺️ Rekam Sesi (untuk Replay)</h3>
+    <p class="progress-tips">Rekam frame + deteksi objek secara berkelanjutan ke server. Sesinya bisa diputar ulang nanti di <span class="badge">web_replay.html</span>, lengkap dengan bounding box tiap frame.</p>
+    <div class="controls">
+      <button class="btn-primary" id="recordBtn" disabled>⏺️ Mulai Rekam</button>
+      <button class="btn-secondary" id="openReplayBtn" style="display:none;">🎬 Buka Replay</button>
+    </div>
+    <div id="recordStatus"></div>
   </div>
 
   <!-- GALERI -->
@@ -449,6 +486,222 @@ testLocalizeBtn.addEventListener('click', testLocalize);
 // Aktifkan tombol tes localize begitu kamera nyala
 startBtn.addEventListener('click', () => {
   setTimeout(() => { testLocalizeBtn.disabled = false; }, 500);
+});
+
+// ============================================================
+// Deteksi Objek Real-time (YOLO) + Recording untuk Replay
+// ============================================================
+const detectToggle = document.getElementById('detectToggle');
+const detectStatus = document.getElementById('detectStatus');
+const detCounter = document.getElementById('detCounter');
+const recordBtn = document.getElementById('recordBtn');
+const recordStatus = document.getElementById('recordStatus');
+const recCounter = document.getElementById('recCounter');
+const openReplayBtn = document.getElementById('openReplayBtn');
+const apiKeyInput = document.getElementById('apiKey');
+const overlayCtx = overlay.getContext('2d');
+
+// Kirim frame ke server tiap FRAME_SEND_MS (bukan tiap animation frame) -
+// cukup untuk deteksi objek yang terasa real-time, tanpa membebani CPU
+// server kecil / kuota data HP. Naikkan jika server kuat & butuh lebih halus.
+const FRAME_SEND_MS = 200;
+
+let ws = null;
+let wsMode = null; // 'detect' | 'record' | null
+let wsWaiting = false;
+let wsFrameTimer = null;
+let currentSessionId = null;
+let lastBoxes = null;
+
+function wsUrl(path) {
+  const httpUrl = new URL(serverUrlInput.value.trim());
+  httpUrl.protocol = httpUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  httpUrl.pathname = path;
+  const key = apiKeyInput.value.trim();
+  if (key) httpUrl.searchParams.set('api_key', key);
+  return httpUrl.toString();
+}
+
+function resizeOverlay() {
+  if (!video.videoWidth) return;
+  overlay.width = video.videoWidth;
+  overlay.height = video.videoHeight;
+}
+video.addEventListener('loadedmetadata', resizeOverlay);
+
+function drawBoxes(dets) {
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  if (!dets) return;
+  overlayCtx.lineWidth = Math.max(2, overlay.width / 400);
+  overlayCtx.font = `${Math.max(14, overlay.width / 45)}px sans-serif`;
+  dets.forEach(d => {
+    const [x1, y1, x2, y2] = d.box;
+    overlayCtx.strokeStyle = '#5eead4';
+    overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    const label = `${d.label} ${(d.conf * 100).toFixed(0)}%`;
+    const w = overlayCtx.measureText(label).width + 10;
+    overlayCtx.fillStyle = 'rgba(6,20,18,0.85)';
+    overlayCtx.fillRect(x1, Math.max(0, y1 - 20), w, 20);
+    overlayCtx.fillStyle = '#5eead4';
+    overlayCtx.fillText(label, x1 + 5, Math.max(13, y1 - 5));
+  });
+}
+
+function setDetectMsg(msg, type) {
+  detectStatus.className = 'status ' + (type || 'info');
+  detectStatus.textContent = msg;
+}
+function setRecordMsg(msg, type) {
+  recordStatus.className = 'status ' + (type || 'info');
+  recordStatus.textContent = msg;
+}
+
+function stopStreaming() {
+  if (wsFrameTimer) clearTimeout(wsFrameTimer);
+  wsFrameTimer = null;
+  if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+  wsMode = null;
+  wsWaiting = false;
+}
+
+function sendFrame() {
+  if (!ws || ws.readyState !== WebSocket.OPEN || wsWaiting) return;
+  const tmp = document.createElement('canvas');
+  tmp.width = video.videoWidth;
+  tmp.height = video.videoHeight;
+  tmp.getContext('2d').drawImage(video, 0, 0);
+  tmp.toBlob((blob) => {
+    if (!blob || !ws || ws.readyState !== WebSocket.OPEN) return;
+    wsWaiting = true;
+    blob.arrayBuffer().then(buf => ws.send(buf));
+  }, 'image/jpeg', 0.7);
+}
+
+function scheduleNextFrame() {
+  wsFrameTimer = setTimeout(sendFrame, FRAME_SEND_MS);
+}
+
+function startDetectStream() {
+  stopStreaming();
+  resizeOverlay();
+  wsMode = 'detect';
+  setDetectMsg('Menghubungkan ke /ws/detect...', 'info');
+  ws = new WebSocket(wsUrl('/ws/detect'));
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => { setDetectMsg('🟢 Live - deteksi aktif.', 'ok'); sendFrame(); };
+  ws.onerror = () => setDetectMsg('❌ Gagal konek ke server (cek alamat & API key).', 'err');
+  ws.onclose = () => { if (wsMode === 'detect') { detectToggle.checked = false; wsMode = null; } };
+  ws.onmessage = (ev) => {
+    wsWaiting = false;
+    try {
+      const data = JSON.parse(ev.data);
+      if (data.error) {
+        setDetectMsg('⚠️ ' + data.error, 'err');
+      } else if (data.detected) {
+        lastBoxes = data.detections;
+        drawBoxes(lastBoxes);
+        detCounter.textContent = `${lastBoxes.length} objek`;
+      }
+    } catch (e) { /* pesan tidak terparse, abaikan */ }
+    if (wsMode === 'detect') scheduleNextFrame();
+  };
+}
+
+detectToggle.addEventListener('change', () => {
+  if (detectToggle.checked) {
+    detCounter.style.display = 'block';
+    startDetectStream();
+  } else {
+    detCounter.style.display = 'none';
+    setDetectMsg('', 'info');
+    if (wsMode === 'detect') stopStreaming();
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  }
+});
+
+async function startRecording() {
+  const url = serverUrlInput.value.replace(/\/$/, '');
+  const key = apiKeyInput.value.trim();
+  setRecordMsg('Memulai sesi recording...', 'info');
+  try {
+    const res = await fetch(`${url}/recordings`, { method: 'POST', headers: key ? { 'X-API-Key': key } : {} });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    currentSessionId = data.session_id;
+    openReplayBtn.style.display = 'none';
+
+    detectToggle.checked = false;
+    detectToggle.disabled = true;
+    setDetectMsg('', 'info');
+    stopStreaming();
+    resizeOverlay();
+    wsMode = 'record';
+    ws = new WebSocket(wsUrl(`/ws/recordings/${currentSessionId}`));
+    ws.binaryType = 'arraybuffer';
+    ws.onopen = () => {
+      recCounter.style.display = 'block';
+      recCounter.innerHTML = `<span class="rec-dot"></span>0 frame`;
+      setRecordMsg(`⏺️ Merekam sesi ${currentSessionId}...`, 'ok');
+      sendFrame();
+    };
+    ws.onerror = () => setRecordMsg('❌ Gagal konek ke server untuk recording.', 'err');
+    ws.onmessage = (ev) => {
+      wsWaiting = false;
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.error) {
+          setRecordMsg('⚠️ ' + data.error, 'err');
+        } else {
+          recCounter.innerHTML = `<span class="rec-dot"></span>${data.frame} frame`;
+          if (data.detected) lastBoxes = data.detections;
+          drawBoxes(lastBoxes);
+        }
+      } catch (e) {}
+      if (wsMode === 'record') scheduleNextFrame();
+    };
+
+    recordBtn.textContent = '⏹️ Berhenti Rekam';
+  } catch (err) {
+    setRecordMsg(`❌ Gagal mulai recording: ${err.message}`, 'err');
+    detectToggle.disabled = false;
+  }
+}
+
+async function stopRecording() {
+  stopStreaming();
+  detectToggle.disabled = false;
+  recCounter.style.display = 'none';
+  recordBtn.textContent = '⏺️ Mulai Rekam';
+  recordBtn.disabled = true;
+
+  const url = serverUrlInput.value.replace(/\/$/, '');
+  const key = apiKeyInput.value.trim();
+  try {
+    const res = await fetch(`${url}/recordings/${currentSessionId}/stop`, { method: 'POST', headers: key ? { 'X-API-Key': key } : {} });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    setRecordMsg(`✅ Sesi selesai: ${data.n_frames} frame tersimpan (session: ${data.session_id}).`, 'ok');
+    const params = new URLSearchParams({ server: url, session: data.session_id, api_key: key });
+    openReplayBtn.style.display = 'inline-block';
+    openReplayBtn.onclick = () => window.open(`web_replay.html?${params.toString()}`, '_blank');
+  } catch (err) {
+    setRecordMsg(`❌ Gagal finalisasi sesi: ${err.message}`, 'err');
+  } finally {
+    recordBtn.disabled = false;
+  }
+}
+
+recordBtn.addEventListener('click', () => {
+  if (wsMode === 'record') stopRecording();
+  else startRecording();
+});
+
+// Aktifkan kontrol deteksi & recording begitu kamera nyala
+startBtn.addEventListener('click', () => {
+  setTimeout(() => {
+    detectToggle.disabled = false;
+    recordBtn.disabled = false;
+  }, 500);
 });
 </script>
 </body>

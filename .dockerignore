@@ -1,0 +1,8 @@
+.git
+.env
+*.md
+04_edge_vio_relay/collected_photos/
+04_edge_vio_relay/recordings/
+02_colmap_mapper/output_map/
+__pycache__/
+*.pyc
