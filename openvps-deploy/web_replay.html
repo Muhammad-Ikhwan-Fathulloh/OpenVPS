@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenVPS - Replay Hasil Capture</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151821;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf33;
+    --text: #e5e7eb;
+    --muted: #8b93a7;
+    --danger: #f87171;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 20px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+  .card {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border: 1px solid #23283a;
+  }
+  label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px; }
+  input[type="text"], select {
+    width: 100%;
+    background: #0e1118;
+    border: 1px solid #2a3040;
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+  }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  button {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:active:not(:disabled) { opacity: 0.75; }
+  .btn-primary { background: var(--accent); color: #04231e; }
+  .btn-secondary { background: #23283a; color: var(--text); }
+  .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  canvas#stage { width: 100%; height: 100%; display: block; }
+
+  .badge {
+    display: inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .scrubber { width: 100%; margin-top: 12px; accent-color: var(--accent); }
+  .frame-info { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+  .det-list { margin-top: 12px; }
+  .det-item {
+    display: flex; justify-content: space-between;
+    background: #0e1118; border: 1px solid #23283a;
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
+    font-size: 0.85rem;
+  }
+  .det-item .conf { color: var(--accent); }
+
+  .status { margin-top: 12px; font-size: 0.88rem; padding: 10px 12px; border-radius: 8px; }
+  .status.info { background: #1a2436; color: #93c5fd; }
+  .status.ok { background: #10261c; color: var(--ok); }
+  .status.err { background: #2a1414; color: var(--danger); }
+
+  .session-list { max-height: 220px; overflow-y: auto; margin-top: 10px; }
+  .session-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid #23283a; margin-bottom: 6px; font-size: 0.85rem;
+  }
+  .session-row:hover { border-color: var(--accent); }
+  .session-row .meta { color: var(--muted); font-size: 0.78rem; }
+  h3 { font-size: 1rem; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎬 OpenVPS — Replay Hasil Capture</h1>
+  <p class="sub">Putar ulang sesi capture (frame asli + bounding box hasil deteksi YOLO tiap frame) yang direkam lewat <span class="badge">web_capture.html</span>.</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="serverUrl">Alamat Server OpenVPS</label>
+        <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="https://vps-kamu.example.com">
+      </div>
+      <div>
+        <label for="apiKey">API Key (kosongkan kalau server mode dev/tanpa auth)</label>
+        <input type="text" id="apiKey" placeholder="X-API-Key">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="sessionId">Session ID</label>
+        <input type="text" id="sessionId" placeholder="20260101_120000_ab12cd">
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn-primary" id="loadBtn">📂 Muat Sesi</button>
+      <button class="btn-secondary" id="listBtn">📋 Lihat Daftar Sesi</button>
+    </div>
+    <div id="sessionList" class="session-list"></div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="playerCard" style="display:none;">
+    <div class="stage">
+      <canvas id="stage"></canvas>
+    </div>
+    <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0">
+    <div class="frame-info">
+      <span id="frameLabel">Frame 0 / 0</span>
+      <span id="fpsLabel"></span>
+    </div>
+    <div class="controls">
+      <button class="btn-primary" id="playBtn">▶️ Putar</button>
+      <button class="btn-secondary" id="prevBtn">⏮️ Sebelumnya</button>
+      <button class="btn-secondary" id="nextBtn">⏭️ Berikutnya</button>
+      <select id="speedSel" style="max-width:120px; margin-bottom:0;">
+        <option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option>
+        <option value="2">2x</option>
+        <option value="4">4x</option>
+      </select>
+    </div>
+    <div class="det-list" id="detList"></div>
+  </div>
+</div>
+
+<script>
+const serverUrlInput = document.getElementById('serverUrl');
+const apiKeyInput = document.getElementById('apiKey');
+const sessionIdInput = document.getElementById('sessionId');
+const statusEl = document.getElementById('status');
+const sessionListEl = document.getElementById('sessionList');
+const playerCard = document.getElementById('playerCard');
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+const scrubber = document.getElementById('scrubber');
+const frameLabel = document.getElementById('frameLabel');
+const fpsLabel = document.getElementById('fpsLabel');
+const playBtn = document.getElementById('playBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const speedSel = document.getElementById('speedSel');
+const detList = document.getElementById('detList');
+
+// Prefill dari query string: web_capture.html mengarahkan ke sini dengan
+// ?server=...&session=...&api_key=... setelah selesai merekam.
+const qs = new URLSearchParams(location.search);
+if (qs.get('server')) serverUrlInput.value = qs.get('server');
+if (qs.get('session')) sessionIdInput.value = qs.get('session');
+if (qs.get('api_key')) apiKeyInput.value = qs.get('api_key');
+
+let manifest = null;
+let frameCache = new Map(); // frame number -> HTMLImageElement
+let lastKnownDetections = null; // untuk 'menahan' box di frame yang di-skip deteksinya
+let currentIdx = 0;
+let playing = false;
+let playTimer = null;
+
+function setStatus(msg, type) {
+  statusEl.className = 'status ' + (type || 'info');
+  statusEl.textContent = msg;
+}
+
+function apiHeaders() {
+  const key = apiKeyInput.value.trim();
+  return key ? { 'X-API-Key': key } : {};
+}
+
+function baseUrl() {
+  return serverUrlInput.value.replace(/\/$/, '');
+}
+
+async function listSessions() {
+  const url = baseUrl();
+  setStatus('Mengambil daftar sesi...', 'info');
+  try {
+    const res = await fetch(`${url}/recordings`, { headers: apiHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const sessions = await res.json();
+    sessionListEl.innerHTML = '';
+    if (sessions.length === 0) {
+      sessionListEl.innerHTML = '<p class="frame-info">Belum ada sesi recording.</p>';
+    }
+    sessions.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'session-row';
+      row.innerHTML = `<span>${s.session_id} <span class="badge">${s.status}</span></span><span class="meta">${s.n_frames} frame</span>`;
+      row.addEventListener('click', () => {
+        sessionIdInput.value = s.session_id;
+        loadSession();
+      });
+      sessionListEl.appendChild(row);
+    });
+    setStatus(`✅ ${sessions.length} sesi ditemukan.`, 'ok');
+  } catch (err) {
+    setStatus(`❌ Gagal ambil daftar sesi: ${err.message}`, 'err');
+  }
+}
+
+async function loadSession() {
+  const url = baseUrl();
+  const sessionId = sessionIdInput.value.trim();
+  if (!sessionId) { setStatus('Isi Session ID dulu (atau pilih dari daftar).', 'err'); return; }
+
+  setStatus('Memuat manifest sesi...', 'info');
+  try {
+    const res = await fetch(`${url}/recordings/${sessionId}/manifest`, { headers: apiHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    manifest = await res.json();
+    if (!manifest.frames || manifest.frames.length === 0) {
+      setStatus('Sesi ini belum punya frame tersimpan.', 'err');
+      return;
+    }
+    frameCache.clear();
+    lastKnownDetections = null;
+    currentIdx = 0;
+    scrubber.max = manifest.frames.length - 1;
+    scrubber.value = 0;
+    playerCard.style.display = 'block';
+    fpsLabel.textContent = manifest.fps_estimate ? `~${manifest.fps_estimate} fps saat rekam` : '';
+    setStatus(`✅ Sesi dimuat: ${manifest.frames.length} frame (status: ${manifest.status}).`, 'ok');
+    await showFrame(0);
+    preload(0, 5);
+  } catch (err) {
+    setStatus(`❌ Gagal muat sesi: ${err.message}`, 'err');
+  }
+}
+
+async function fetchFrameImage(idx) {
+  if (frameCache.has(idx)) return frameCache.get(idx);
+  const rec = manifest.frames[idx];
+  const url = baseUrl();
+  const res = await fetch(`${url}/recordings/${manifest.session_id}/frames/${rec.file}`, { headers: apiHeaders() });
+  if (!res.ok) throw new Error(`Gagal ambil frame ${rec.frame}`);
+  const blob = await res.blob();
+  const img = await createImageBitmap(blob);
+  frameCache.set(idx, img);
+  return img;
+}
+
+function preload(startIdx, count) {
+  for (let i = startIdx; i < Math.min(startIdx + count, manifest.frames.length); i++) {
+    if (!frameCache.has(i)) fetchFrameImage(i).catch(() => {});
+  }
+}
+
+function drawDetections(dets) {
+  if (!dets) return;
+  ctx.lineWidth = Math.max(2, canvas.width / 400);
+  ctx.font = `${Math.max(14, canvas.width / 45)}px -apple-system, sans-serif`;
+  dets.forEach(d => {
+    const [x1, y1, x2, y2] = d.box;
+    ctx.strokeStyle = '#5eead4';
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    const label = `${d.label} ${(d.conf * 100).toFixed(0)}%`;
+    const textW = ctx.measureText(label).width + 10;
+    ctx.fillStyle = 'rgba(6, 20, 18, 0.85)';
+    ctx.fillRect(x1, Math.max(0, y1 - 22), textW, 22);
+    ctx.fillStyle = '#5eead4';
+    ctx.fillText(label, x1 + 5, Math.max(14, y1 - 6));
+  });
+}
+
+function renderDetList(dets) {
+  detList.innerHTML = '';
+  if (!dets || dets.length === 0) {
+    detList.innerHTML = '<p class="frame-info">Tidak ada objek terdeteksi di frame ini.</p>';
+    return;
+  }
+  dets.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'det-item';
+    div.innerHTML = `<span>${d.label}</span><span class="conf">${(d.conf * 100).toFixed(1)}%</span>`;
+    detList.appendChild(div);
+  });
+}
+
+async function showFrame(idx) {
+  if (!manifest) return;
+  idx = Math.max(0, Math.min(idx, manifest.frames.length - 1));
+  currentIdx = idx;
+  scrubber.value = idx;
+
+  const rec = manifest.frames[idx];
+  // Frame yang di-skip deteksinya (config DETECT_EVERY_N_FRAMES > 1) tidak
+  // punya deteksi baru -> tahan (hold) box terakhir yang diketahui, supaya
+  // overlay tidak "berkedip" hilang tiap frame yang di-skip.
+  if (rec.detected) lastKnownDetections = rec.detections;
+
+  frameLabel.textContent = `Frame ${idx + 1} / ${manifest.frames.length}`;
+
+  try {
+    const img = await fetchFrameImage(idx);
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    drawDetections(lastKnownDetections);
+    renderDetList(lastKnownDetections);
+    preload(idx + 1, 4);
+  } catch (err) {
+    setStatus(`⚠️ ${err.message}`, 'err');
+  }
+}
+
+function stopPlayback() {
+  playing = false;
+  playBtn.textContent = '▶️ Putar';
+  if (playTimer) clearTimeout(playTimer);
+}
+
+function startPlayback() {
+  if (!manifest || currentIdx >= manifest.frames.length - 1) currentIdx = 0;
+  playing = true;
+  playBtn.textContent = '⏸️ Jeda';
+  scheduleNextFrame();
+}
+
+function scheduleNextFrame() {
+  if (!playing) return;
+  const speed = parseFloat(speedSel.value);
+  const frames = manifest.frames;
+  let delayMs = 150; // fallback kalau timestamp tidak masuk akal
+  if (currentIdx < frames.length - 1) {
+    const dt = (frames[currentIdx + 1].ts - frames[currentIdx].ts) * 1000;
+    if (dt > 0 && dt < 5000) delayMs = dt;
+  }
+  playTimer = setTimeout(async () => {
+    if (!playing) return;
+    if (currentIdx >= frames.length - 1) { stopPlayback(); return; }
+    await showFrame(currentIdx + 1);
+    scheduleNextFrame();
+  }, delayMs / speed);
+}
+
+document.getElementById('loadBtn').addEventListener('click', loadSession);
+document.getElementById('listBtn').addEventListener('click', listSessions);
+scrubber.addEventListener('input', () => { stopPlayback(); showFrame(parseInt(scrubber.value)); });
+prevBtn.addEventListener('click', () => { stopPlayback(); showFrame(currentIdx - 1); });
+nextBtn.addEventListener('click', () => { stopPlayback(); showFrame(currentIdx + 1); });
+playBtn.addEventListener('click', () => { playing ? stopPlayback() : startPlayback(); });
+
+// Auto-load kalau session id sudah terisi dari query string
+if (sessionIdInput.value) loadSession();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+.git
+.env
+*.md
+collected_photos/
+recordings/
+__pycache__/
+*.pyc

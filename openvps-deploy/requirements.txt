@@ -1,0 +1,22 @@
+# OpenVPS - Module 04 dependencies
+# Pin versi supaya deployment production reproducible (tidak tiba-tiba
+# berubah perilaku karena ada update mayor di salah satu library).
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+
+# Multi object detection (YOLO). ultralytics otomatis bawa torch - install
+# ini paling lama & paling besar ukurannya (~1-2GB dengan torch CPU).
+# Kalau VPS kamu hanya butuh relocalization + capture TANPA deteksi objek,
+# baris ultralytics ini boleh dihapus (endpoint /detect, /ws/detect, dan
+# /ws/recordings akan tetap start tapi melaporkan model belum siap lewat
+# /health, bukan bikin server crash).
+ultralytics==8.3.55
+
+# Opsional (upgrade Modul 02 build_map.py ke reconstruction asli):
+# pycolmap==3.11.1
