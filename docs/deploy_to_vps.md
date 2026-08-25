@@ -12,12 +12,13 @@ FastAPI, sekarang mencakup relocalization + **multi object detection (YOLO)**
 ## 0. Wajib sebelum deploy: siapkan konfigurasi
 
 ```bash
-cd openvps/04_edge_vio_relay
+cd openvps/openvps-deploy
 cp .env.example .env
 # Generate API key:
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
-# Isi OPENVPS_API_KEY dengan hasilnya, dan OPENVPS_CORS_ORIGINS dengan
-# domain frontend kamu (bukan "*") di .env
+# Isi OPENVPS_API_KEY dengan hasilnya.
+# OPENVPS_CORS_ORIGINS default "*" sudah cukup kalau web UI di-serve
+# dari server yang sama. Ganti ke domain spesifik kalau frontend terpisah.
 ```
 
 ## Opsi A — Manual (systemd + nginx), paling gampang dipahami
@@ -32,7 +33,7 @@ git clone <repo-kamu> openvps && cd openvps
 # 3. Setup virtualenv
 python3 -m venv venv
 source venv/bin/activate
-pip install -r 04_edge_vio_relay/requirements.txt
+pip install -r openvps-deploy/requirements.txt
 # (kalau tidak butuh deteksi objek sama sekali, hapus baris "ultralytics"
 #  dari requirements.txt dulu supaya instalasi lebih cepat & ringan)
 
@@ -44,8 +45,8 @@ After=network.target
 
 [Service]
 User=www-data
-WorkingDirectory=/path/ke/openvps/04_edge_vio_relay
-EnvironmentFile=/path/ke/openvps/04_edge_vio_relay/.env
+WorkingDirectory=/path/ke/openvps/openvps-deploy
+EnvironmentFile=/path/ke/openvps/openvps-deploy/.env
 ExecStart=/path/ke/openvps/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
@@ -84,17 +85,17 @@ sudo certbot --nginx -d vps-kamu.example.com
 
 ## Opsi B — Docker (lebih portable, gampang dipindah antar VPS)
 
-`Dockerfile` sudah tersedia di `04_edge_vio_relay/Dockerfile`. Build context-nya
-harus dari ROOT project (bukan dari dalam folder 04_edge_vio_relay), karena
-image butuh folder `03_hloc_lite` juga:
+`Dockerfile` sudah tersedia di `openvps-deploy/Dockerfile`. Folder ini sudah
+berdiri sendiri (`hloc_lite.py` sudah disalin ke sini), jadi build
+context cukup dari dalam folder `openvps-deploy`:
 
 ```bash
-cd openvps   # root project, bukan 04_edge_vio_relay
-docker build -t openvps-server -f 04_edge_vio_relay/Dockerfile .
+cd openvps/openvps-deploy
+docker build -t openvps-server .
 docker run -d --restart always \
-  --env-file 04_edge_vio_relay/.env \
-  -v $(pwd)/04_edge_vio_relay/recordings:/app/04_edge_vio_relay/recordings \
-  -v $(pwd)/04_edge_vio_relay/collected_photos:/app/04_edge_vio_relay/collected_photos \
+  --env-file .env \
+  -v $(pwd)/recordings:/app/recordings \
+  -v $(pwd)/collected_photos:/app/collected_photos \
   -p 127.0.0.1:8000:8000 --name openvps openvps-server
 # lalu nginx + certbot sama seperti Opsi A langkah 5-6
 ```
@@ -107,7 +108,7 @@ hilang saat container di-restart/redeploy.
 `ultralytics` otomatis download model (mis. `yolov8n.pt`) saat pertama kali
 dipakai. Kalau VPS produksi tidak punya akses internet keluar (network
 policy ketat), download dulu model-nya di mesin lain, taruh file `.pt`-nya
-di `04_edge_vio_relay/`, lalu set `OPENVPS_YOLO_MODEL=/app/04_edge_vio_relay/yolov8n.pt`
+di `openvps-deploy/`, lalu set `OPENVPS_YOLO_MODEL=/app/yolov8n.pt`
 (sesuaikan path) di `.env`.
 
 ## Checklist sebelum production

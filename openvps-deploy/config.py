@@ -39,6 +39,10 @@ AUTH_ENABLED = bool(API_KEY)
 # Default "*" supaya gampang dites dari mana saja. GANTI ke domain frontend
 # asli kamu di production (mis. "https://vps-kamu.example.com").
 CORS_ORIGINS = _list("OPENVPS_CORS_ORIGINS", ["*"])
+# CORS spec melarang allow_credentials=True bersamaan dengan origins=["*"].
+# Kalau origins spesifik (bukan wildcard), aktifkan credentials supaya
+# browser bisa kirim cookie/auth header cross-origin dengan benar.
+CORS_ALLOW_CREDENTIALS = CORS_ORIGINS != ["*"]
 
 # --- Peta VPS (hasil Modul 02 COLMAP + Modul 03 hloc-lite) ---
 # Kosong = pakai build_demo_map() (data sintetis, HANYA untuk belajar/tes).

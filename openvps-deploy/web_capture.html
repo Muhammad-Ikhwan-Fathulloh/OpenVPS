@@ -351,13 +351,15 @@ async function uploadAll() {
   uploadBtn.disabled = true;
   setStatus(`Mengirim ${capturedPhotos.length} foto ke ${url} ...`, 'info');
 
+  const key = apiKeyInput.value.trim();
   const formData = new FormData();
   capturedPhotos.forEach((p, i) => {
     formData.append('images', p.blob, `frame_${String(i).padStart(3,'0')}.jpg`);
   });
 
   try {
-    const res = await fetch(`${url}/upload-images`, { method: 'POST', body: formData });
+    const headers = key ? { 'X-API-Key': key } : {};
+    const res = await fetch(`${url}/upload-images`, { method: 'POST', body: formData, headers });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     setStatus(`✅ Berhasil! ${data.n_saved} foto tersimpan di server (session: ${data.session_id}). Folder: ${data.folder}`, 'ok');
@@ -454,11 +456,13 @@ async function testLocalize() {
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
 
+  const key = apiKeyInput.value.trim();
   canvas.toBlob(async (blob) => {
     const formData = new FormData();
     formData.append('image', blob, 'query.jpg');
     try {
-      const res = await fetch(`${url}/relocalize`, { method: 'POST', body: formData });
+      const headers = key ? { 'X-API-Key': key } : {};
+      const res = await fetch(`${url}/relocalize`, { method: 'POST', body: formData, headers });
       const data = await res.json();
       resultBox.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
     } catch (err) {
