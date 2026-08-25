@@ -308,6 +308,24 @@
     const logSys = (m) => { document.getElementById('sysLog').innerHTML = m; };
 
     // --- HUD MODULE (Taktis) ---
+    // Persistent detections data
+    let currentDetections = [];
+    let hudRenderLoop = null;
+
+    function startHUDRender() {
+      if (hudRenderLoop) return;
+      const render = () => {
+        if (cameraActive) {
+          const ctx = document.getElementById('overlayCanvas').getContext('2d');
+          const w = document.getElementById('overlayCanvas').width;
+          const h = document.getElementById('overlayCanvas').height;
+          drawTacticalHUD(ctx, w, h, currentDetections);
+        }
+        hudRenderLoop = requestAnimationFrame(render);
+      };
+      render();
+    }
+
     function drawTacticalHUD(ctx, width, height, dets) {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
@@ -371,7 +389,11 @@
         document.getElementById('camStatus').textContent = 'LIVE';
         document.getElementById('camStatus').className = 'badge bg-success';
         ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord'].forEach(id => document.getElementById(id).disabled = false);
-        video.onloadedmetadata = () => { overlayCanvas.width = video.videoWidth; overlayCanvas.height = video.videoHeight; };
+        video.onloadedmetadata = () => {
+          overlayCanvas.width = video.videoWidth;
+          overlayCanvas.height = video.videoHeight;
+          if (typeof startHUDRender === 'function') startHUDRender();
+        };
       } catch (e) { logSys('Gagal akses kamera: ' + e.message); }
     };
     document.getElementById('flipCamBtn').onclick = () => { facingMode = facingMode === 'environment' ? 'user' : 'environment'; document.getElementById('startCamBtn').click(); setTimeout(() => document.getElementById('startCamBtn').click(), 200); };
