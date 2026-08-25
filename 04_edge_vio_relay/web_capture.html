@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenVPS - Pengambil Foto untuk Pemetaan</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151821;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf33;
+    --text: #e5e7eb;
+    --muted: #8b93a7;
+    --danger: #f87171;
+    --ok: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 20px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+  .card {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border: 1px solid #23283a;
+  }
+
+  .video-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  video, canvas.overlay {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  canvas.overlay { pointer-events: none; }
+
+  .counter {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .counter.done { color: var(--ok); }
+
+  .controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:active:not(:disabled) { opacity: 0.75; }
+
+  .btn-primary { background: var(--accent); color: #04231e; flex: 1; min-width: 160px; }
+  .btn-secondary { background: #23283a; color: var(--text); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #2a3040;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .rm {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.7);
+    color: var(--danger);
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    font-size: 12px; line-height: 20px; text-align: center;
+    cursor: pointer;
+  }
+
+  label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px; }
+  input[type="text"] {
+    width: 100%;
+    background: #0e1118;
+    border: 1px solid #2a3040;
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+
+  .status { margin-top: 12px; font-size: 0.88rem; padding: 10px 12px; border-radius: 8px; }
+  .status.info { background: #1a2436; color: #93c5fd; }
+  .status.ok { background: #10261c; color: var(--ok); }
+  .status.err { background: #2a1414; color: var(--danger); }
+
+  .progress-tips {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  #resultBox pre {
+    background: #0e1118;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    color: #a5f3dc;
+  }
+  h3 { font-size: 1rem; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📷 OpenVPS — Pengambil Foto untuk Pemetaan</h1>
+  <p class="sub">Ambil 10–20 foto ruangan/objek dari sudut berbeda (overlap 60–80%), lalu kirim ke server OpenVPS untuk dibuatkan peta 3D (Modul 02 COLMAP).</p>
+
+  <!-- KONFIGURASI SERVER -->
+  <div class="card">
+    <label for="serverUrl">Alamat Server OpenVPS (Modul 04)</label>
+    <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="https://vps-kamu.example.com">
+    <div class="progress-tips">Ganti dengan alamat VPS setelah dideploy (lihat <span class="badge">docs/deploy_to_vps.md</span>). Untuk tes lokal, jalankan <code>uvicorn server:app --host 0.0.0.0 --port 8000</code> lalu pakai <code>http://localhost:8000</code>.</div>
+  </div>
+
+  <!-- KAMERA -->
+  <div class="card">
+    <div class="video-box">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay" class="overlay"></canvas>
+      <div class="counter" id="counter">0 / 15 foto</div>
+    </div>
+    <div class="controls">
+      <button class="btn-primary" id="startBtn">Aktifkan Kamera</button>
+      <button class="btn-secondary" id="captureBtn" disabled>📸 Ambil Foto</button>
+      <button class="btn-secondary" id="flipBtn" disabled>🔄 Ganti Kamera</button>
+    </div>
+    <div class="progress-tips" id="tip">Aktifkan kamera dulu, lalu mulai keliling ruangan/objek sambil ambil foto tiap beberapa langkah.</div>
+  </div>
+
+  <!-- GALERI -->
+  <div class="card">
+    <h3>Foto Terkumpul (<span id="galCount">0</span>)</h3>
+    <div class="gallery" id="gallery"></div>
+    <div class="controls">
+      <button class="btn-primary" id="uploadBtn" disabled>⬆️ Kirim Semua ke Server</button>
+      <button class="btn-secondary" id="downloadBtn" disabled>⬇️ Unduh sebagai ZIP</button>
+      <button class="btn-danger" id="clearBtn" disabled>Hapus Semua</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <!-- TES LOCALIZE LANGSUNG -->
+  <div class="card">
+    <h3>🧭 Tes Localize Langsung (Modul 04 relocalize)</h3>
+    <p class="progress-tips">Setelah server punya peta (hasil Modul 02+03), coba snap 1 foto di sini untuk lihat hasil localization real-time dari browser.</p>
+    <div class="controls">
+      <button class="btn-secondary" id="testLocalizeBtn" disabled>📍 Snap &amp; Localize</button>
+    </div>
+    <div id="resultBox"></div>
+  </div>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const counter = document.getElementById('counter');
+const startBtn = document.getElementById('startBtn');
+const captureBtn = document.getElementById('captureBtn');
+const flipBtn = document.getElementById('flipBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const clearBtn = document.getElementById('clearBtn');
+const testLocalizeBtn = document.getElementById('testLocalizeBtn');
+const gallery = document.getElementById('gallery');
+const galCount = document.getElementById('galCount');
+const statusEl = document.getElementById('status');
+const resultBox = document.getElementById('resultBox');
+const tip = document.getElementById('tip');
+const serverUrlInput = document.getElementById('serverUrl');
+
+const TARGET_MIN = 10;
+const TARGET_MAX = 20;
+let capturedPhotos = []; // { blob, url }
+let currentStream = null;
+let facingMode = 'environment';
+
+const TIPS = [
+  "Mulai dari satu sudut, lalu bergeser pelan sambil tetap menghadap objek yang sama.",
+  "Pastikan tiap foto punya area yang tumpang tindih (overlap) 60-80% dengan foto sebelumnya.",
+  "Hindari gerakan terlalu cepat / blur - berhenti sejenak sebelum ambil foto.",
+  "Variasikan ketinggian & sudut sedikit demi hasil rekonstruksi 3D yang lebih kaya.",
+  "Kalau ruangan besar, jalan mengelilingi dalam pola lingkaran/zigzag.",
+];
+
+function setStatus(msg, type) {
+  statusEl.className = 'status ' + (type || 'info');
+  statusEl.textContent = msg;
+}
+
+async function startCamera() {
+  try {
+    if (currentStream) {
+      currentStream.getTracks().forEach(t => t.stop());
+    }
+    currentStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false
+    });
+    video.srcObject = currentStream;
+    captureBtn.disabled = false;
+    flipBtn.disabled = false;
+    startBtn.textContent = "Kamera Aktif ✓";
+    startBtn.disabled = true;
+    tip.textContent = TIPS[0];
+  } catch (err) {
+    setStatus("Gagal akses kamera: " + err.message + " (pastikan izinkan akses kamera di browser)", 'err');
+  }
+}
+
+function capturePhoto() {
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    capturedPhotos.push({ blob, url });
+    renderGallery();
+    flashScreen();
+    updateTip();
+  }, 'image/jpeg', 0.9);
+}
+
+function flashScreen() {
+  overlay.style.background = 'rgba(255,255,255,0.6)';
+  setTimeout(() => overlay.style.background = 'transparent', 100);
+}
+
+function updateTip() {
+  const n = capturedPhotos.length;
+  counter.textContent = `${n} / ${TARGET_MIN} foto`;
+  counter.className = n >= TARGET_MIN ? 'counter done' : 'counter';
+  if (n < TARGET_MIN) {
+    tip.textContent = TIPS[n % TIPS.length];
+  } else if (n < TARGET_MAX) {
+    tip.textContent = `Sudah cukup (${n} foto) - boleh tambah beberapa lagi sampai ${TARGET_MAX}, atau langsung kirim.`;
+  } else {
+    tip.textContent = `Sudah mencapai batas ideal (${TARGET_MAX} foto). Kirim sekarang untuk hasil terbaik.`;
+  }
+  uploadBtn.disabled = n < 3;
+  downloadBtn.disabled = n === 0;
+  clearBtn.disabled = n === 0;
+}
+
+function renderGallery() {
+  gallery.innerHTML = '';
+  capturedPhotos.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.innerHTML = `<img src="${p.url}"><div class="rm" data-i="${i}">✕</div>`;
+    gallery.appendChild(div);
+  });
+  galCount.textContent = capturedPhotos.length;
+  gallery.querySelectorAll('.rm').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const i = parseInt(e.target.dataset.i);
+      URL.revokeObjectURL(capturedPhotos[i].url);
+      capturedPhotos.splice(i, 1);
+      renderGallery();
+      updateTip();
+    });
+  });
+}
+
+async function uploadAll() {
+  const url = serverUrlInput.value.replace(/\/$/, '');
+  if (!url) { setStatus("Isi alamat server dulu.", 'err'); return; }
+
+  uploadBtn.disabled = true;
+  setStatus(`Mengirim ${capturedPhotos.length} foto ke ${url} ...`, 'info');
+
+  const formData = new FormData();
+  capturedPhotos.forEach((p, i) => {
+    formData.append('images', p.blob, `frame_${String(i).padStart(3,'0')}.jpg`);
+  });
+
+  try {
+    const res = await fetch(`${url}/upload-images`, { method: 'POST', body: formData });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    setStatus(`✅ Berhasil! ${data.n_saved} foto tersimpan di server (session: ${data.session_id}). Folder: ${data.folder}`, 'ok');
+  } catch (err) {
+    setStatus(`❌ Gagal kirim: ${err.message}. Pastikan server jalan & CORS aktif.`, 'err');
+  } finally {
+    uploadBtn.disabled = false;
+  }
+}
+
+async function downloadZip() {
+  // Fallback tanpa server: zip sederhana manual (tanpa kompresi, cukup untuk foto JPEG)
+  setStatus("Menyiapkan ZIP...", 'info');
+  const parts = [];
+  let offset = 0;
+  const central = [];
+
+  function crc32(buf) {
+    let c, crc = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) {
+      c = (crc ^ buf[i]) & 0xFF;
+      for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      crc = (crc >>> 8) ^ c;
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  for (let i = 0; i < capturedPhotos.length; i++) {
+    const buf = new Uint8Array(await capturedPhotos[i].blob.arrayBuffer());
+    const name = `frame_${String(i).padStart(3,'0')}.jpg`;
+    const nameBytes = new TextEncoder().encode(name);
+    const crc = crc32(buf);
+
+    const localHeader = new DataView(new ArrayBuffer(30));
+    localHeader.setUint32(0, 0x04034b50, true);
+    localHeader.setUint16(4, 20, true);
+    localHeader.setUint16(6, 0, true);
+    localHeader.setUint16(8, 0, true);
+    localHeader.setUint16(10, 0, true);
+    localHeader.setUint16(12, 0, true);
+    localHeader.setUint32(14, crc, true);
+    localHeader.setUint32(18, buf.length, true);
+    localHeader.setUint32(22, buf.length, true);
+    localHeader.setUint16(26, nameBytes.length, true);
+    localHeader.setUint16(28, 0, true);
+
+    parts.push(new Uint8Array(localHeader.buffer), nameBytes, buf);
+
+    central.push({ crc, size: buf.length, name: nameBytes, offset });
+    offset += 30 + nameBytes.length + buf.length;
+  }
+
+  const centralStart = offset;
+  for (const c of central) {
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true);
+    ch.setUint16(6, 20, true);
+    ch.setUint16(8, 0, true);
+    ch.setUint16(10, 0, true);
+    ch.setUint16(12, 0, true);
+    ch.setUint32(16, c.crc, true);
+    ch.setUint32(20, c.size, true);
+    ch.setUint32(24, c.size, true);
+    ch.setUint16(28, c.name.length, true);
+    ch.setUint32(42, c.offset, true);
+    parts.push(new Uint8Array(ch.buffer), c.name);
+    offset += 46 + c.name.length;
+  }
+  const centralSize = offset - centralStart;
+
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, central.length, true);
+  end.setUint16(10, central.length, true);
+  end.setUint32(12, centralSize, true);
+  end.setUint32(16, centralStart, true);
+  parts.push(new Uint8Array(end.buffer));
+
+  const blob = new Blob(parts, { type: 'application/zip' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'openvps_photos.zip';
+  a.click();
+  setStatus("✅ ZIP terunduh - pakai folder hasil ekstraknya sebagai --images di Modul 02.", 'ok');
+}
+
+async function testLocalize() {
+  const url = serverUrlInput.value.replace(/\/$/, '');
+  resultBox.innerHTML = '<p class="progress-tips">Mengambil foto & mengirim ke server...</p>';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  canvas.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append('image', blob, 'query.jpg');
+    try {
+      const res = await fetch(`${url}/relocalize`, { method: 'POST', body: formData });
+      const data = await res.json();
+      resultBox.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    } catch (err) {
+      resultBox.innerHTML = `<p class="status err">Gagal: ${err.message}</p>`;
+    }
+  }, 'image/jpeg', 0.9);
+}
+
+startBtn.addEventListener('click', startCamera);
+captureBtn.addEventListener('click', capturePhoto);
+flipBtn.addEventListener('click', () => {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  startCamera();
+});
+uploadBtn.addEventListener('click', uploadAll);
+downloadBtn.addEventListener('click', downloadZip);
+clearBtn.addEventListener('click', () => {
+  capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
+  capturedPhotos = [];
+  renderGallery();
+  updateTip();
+});
+testLocalizeBtn.addEventListener('click', testLocalize);
+
+// Aktifkan tombol tes localize begitu kamera nyala
+startBtn.addEventListener('click', () => {
+  setTimeout(() => { testLocalizeBtn.disabled = false; }, 500);
+});
+</script>
+</body>
+</html>
