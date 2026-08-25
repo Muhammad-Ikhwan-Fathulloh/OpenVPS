@@ -137,11 +137,23 @@ def web_capture_page():
     """Halaman utama: UI capture + relocalize + live detect + recording."""
     return _serve_html("web_capture.html")
 
+@app.get("/web_capture.html", response_class=HTMLResponse, include_in_schema=False)
+def web_capture_link():
+    return _serve_html("web_capture.html")
 
 @app.get("/replay", response_class=HTMLResponse, include_in_schema=False)
 def web_replay_page():
     """Halaman player untuk memutar ulang sesi recording."""
     return _serve_html("web_replay.html")
+
+@app.get("/web_replay.html", response_class=HTMLResponse, include_in_schema=False)
+def web_replay_link():
+    return _serve_html("web_replay.html")
+
+@app.get("/web_three_replay.html", response_class=HTMLResponse, include_in_schema=False)
+def web_three_replay_page():
+    """Halaman player 3D."""
+    return _serve_html("web_three_replay.html")
 
 
 @app.exception_handler(Exception)
