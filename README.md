@@ -10,7 +10,7 @@ MultiSet AI), dari konsep termudah sampai arsitektur edge+cloud+web.
 | 01 | `slam_mini` | Visual Odometry (dasar SLAM, pengganti ringan ORB-SLAM3/RTAB-Map) | Python |
 | 02 | `colmap_mapper` | 3D reconstruction dari foto (Structure-from-Motion) | Python (pycolmap) |
 | 03 | `hloc_lite` | Hierarchical localization: retrieval + matching + PnP | Python |
-| 04 | `edge_vio_relay` | Server relocalization + **deteksi objek YOLO real-time** + **recording/replay** + kamera ARKit + **kamera browser** | Python + Swift + HTML/JS |
+| 04 | `edge_vio_relay` | Server relocalization + **deteksi objek YOLO real-time** + **recording/replay** + **kamera browser** | Python + HTML/JS |
 
 ## Cara tercepat untuk mencoba (browser, tanpa install apapun di sisi kamu)
 
@@ -79,7 +79,8 @@ MultiSet AI), dari konsep termudah sampai arsitektur edge+cloud+web.
   akurasi lebih tinggi + loop closure + multi-map
 - Modul 03 -> hloc asli (GitHub: cvg/Hierarchical-Localization) dengan
   SuperPoint+SuperGlue kalau server punya GPU
-- Modul 04 -> ARCore (Android) versi dari client_arkit.swift, atau upgrade
+- Modul 04 -> tambahkan client native (ARKit/iOS atau ARCore/Android) yang
+  panggil endpoint `/relocalize` & `/ws/detect` yang sama, atau upgrade
   ke Kalman filter untuk sensor fusion VIO+server correction
 - Modul 04 (deteksi) -> ganti `OPENVPS_YOLO_MODEL` ke YOLOv8s/m/l/x atau
   model custom hasil training sendiri kalau butuh akurasi lebih tinggi;
