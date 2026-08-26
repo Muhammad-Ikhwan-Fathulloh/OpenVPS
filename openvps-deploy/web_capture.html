@@ -424,6 +424,9 @@
     const getWsUrl = () => getUrl().replace(/^http/, 'ws');
     const logSys = (m) => { document.getElementById('sysLog').innerHTML = m; };
 
+    // currentProvider harus dideklarasikan sebelum applyPreset() dipanggil
+    let currentProvider = 'openvps';
+
     // --- SERVER PRESETS ---
     const DEFAULT_PRESETS = [
       { label: '🖥️ Localhost', url: 'http://localhost:8000', apiKey: '', type: 'openvps' },
@@ -497,8 +500,6 @@
       const idx = parseInt(document.getElementById('serverPreset').value) || 0;
       if (presets[idx]) { presets[idx].apiKey = document.getElementById('apiKey').value.trim(); savePresets(presets); }
     });
-
-    let currentProvider = 'openvps';
 
     // --- HUD MODULE (Taktis) ---
     // Persistent detections data
