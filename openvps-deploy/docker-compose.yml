@@ -1,0 +1,107 @@
+# ============================================================
+#  OpenVPS — docker-compose Production Stack
+#  2 service:
+#    1) openvps-app   -> FastAPI + YOLO + uvicorn (port 8000 internal)
+#    2) (optional) pakai Nginx di HOST saja (tanpa container) —
+#       lihat ./nginx.conf untuk config
+#  Cara pakai:
+#    docker compose up -d --build
+# ============================================================
+
+services:
+  openvps-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openvps-app
+    restart: unless-stopped
+
+    # Publish ke localhost saja (127.0.0.1) — Nginx di host yang akan
+    # handle HTTPS + domain. JANGAN expose port 8000 langsung ke 0.0.0.0
+    # (bypass Nginx = tidak ada SSL + tidak ada rate limit Nginx).
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    environment:
+      # ---- Basic ----
+      TZ: Asia/Jakarta
+      PYTHONUNBUFFERED: 1
+
+      # ---- OPENVPS config (sesuaikan dengan .env.example, tanpa OPENVPS_ prefix) ----
+      # Ganti dengan API KEY SENDIRI — WAJIB di production!
+      # OPENVPS_API_KEY: "ganti_dengan_random_string_panjang_min_32_char"
+
+      # ---- CORS (domain HTTPS kamu) ----
+      OPENVPS_CORS_ORIGINS: "https://openvps.darting.my.id"
+      OPENVPS_CORS_ALLOW_CREDENTIALS: "true"
+
+      # ---- YOLO model (default yolov8n.pt = paling kecil & cepat) ----
+      # OPENVPS_YOLO_MODEL: yolov8n.pt
+
+      # ---- Map path (untuk VPS relocalization akurat) ----
+      # OPENVPS_MAP_PATH: /app/data/map.json
+      # Jika belum punya map, kosongkan saja = pakai demo map (sintetis)
+
+    # ---- Volumes: persistence recordings, collected_photos, model cache ----
+    # Supaya container di-recreate/restart, data TIDAK hilang dan model
+    # YOLO tidak perlu di-download ulang setiap build.
+    volumes:
+      - ./recordings:/app/recordings:rw
+      - ./collected_photos:/app/collected_photos:rw
+      - ./uploads:/app/uploads:rw
+      # Cache YOLO/torch model — hemat bandwidth & startup time
+      - openvps_model_cache:/home/openvps/.cache:rw
+
+    # ---- Healthcheck sesuai Dockerfile (tunggu 3 menit sebelum dianggap unhealthy) ----
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s   # 3 menit grace period load YOLO + torch
+
+    # ---- Resource limits (sesuaikan dengan VPS kamu) ----
+    # Untuk YOLO CPU: butuh minimal 2GB RAM + 2 vCPU agar tidak OOM.
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+        reservations:
+          memory: 1G
+          cpus: "0.5"
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+# ---------- (OPSIONAL) Nginx container sebagai reverse proxy ----------
+# Kalau TIDAK ingin install Nginx di host, uncomment block di bawah ini.
+# Konfigurasinya di ./nginx.conf tapi perlu diadaptasi path SSL cert-nya.
+#
+#  nginx:
+#    image: nginx:1.27-alpine
+#    container_name: openvps-nginx
+#    restart: unless-stopped
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+#      - ./recordings:/var/www/openvps/recordings:ro
+#      # SSL cert path (misal pakai certbot di host /etc/letsencrypt):
+#      - /etc/letsencrypt:/etc/letsencrypt:ro
+#    depends_on:
+#      openvps-app:
+#        condition: service_healthy
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: "5m"
+#        max-file: "3"
+
+volumes:
+  openvps_model_cache:
+    driver: local
