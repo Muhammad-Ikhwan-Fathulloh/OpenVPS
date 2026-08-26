@@ -13,13 +13,9 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-# Build deps hanya untuk native extensions (opencv, dll)
-# Digabung dalam 1 RUN supaya tidak ada layer intermediate yang mubazir
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        libgl1 \
-        libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Semua package (torch, opencv-headless, ultralytics) tersedia sebagai
+# binary wheel di PyPI/whl/cpu — tidak perlu build-essential/gcc sama sekali.
+# pip wheel mengunduh pre-built wheels ke /wheels tanpa compile apapun.
 
 # --- Layer 1: Torch CPU-only (besar ~700MB, jarang berubah -> cache lama) ---
 RUN pip install --upgrade pip wheel setuptools --quiet \
@@ -39,8 +35,9 @@ LABEL org.opencontainers.image.title="OpenVPS Server" \
       org.opencontainers.image.description="Visual Positioning System + YOLO Detection + Replay (CPU)" \
       org.opencontainers.image.vendor="OpenVPS"
 
-# Runtime native deps only (tidak ada gcc/build-essential di image final)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Runtime native deps only (libgl1 + libglib2 dibutuhkan opencv headless)
+# Retry dengan --fix-missing kalau repo mirror VPS sedang stale
+RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
         libgl1 \
         libglib2.0-0 \
         curl \
