@@ -8,8 +8,6 @@
 
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Three.js (For Replay 3D) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
   <style>
     body {
@@ -133,7 +131,8 @@
   <nav class="navbar navbar-dark bg-dark border-bottom border-secondary mb-4 px-3"
     style="background-color: #11141c !important;">
     <span class="navbar-brand mb-0 h1 text-info fw-bold">📷 OpenVPS Dashboard</span>
-    <div class="d-flex w-auto gap-2 align-items-center">
+    <div class="d-flex w-auto gap-3 align-items-center">
+      <a href="/replay" class="btn btn-sm btn-outline-info text-info fw-bold" style="text-decoration:none;">🎬 Replay</a>
       <input type="text" id="serverUrl" class="form-control form-control-sm bg-dark text-light border-secondary"
         value="http://localhost:8000" style="width: 200px;" placeholder="Server URL">
       <input type="text" id="apiKey" class="form-control form-control-sm bg-dark text-light border-secondary"
@@ -147,14 +146,6 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="capture-tab" data-bs-toggle="tab" data-bs-target="#capture" type="button"
           role="tab">📹 Capture & Detect</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="replay2d-tab" data-bs-toggle="tab" data-bs-target="#replay2d" type="button"
-          role="tab">🎬 Replay (2D)</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="replay3d-tab" data-bs-toggle="tab" data-bs-target="#replay3d" type="button"
-          role="tab">🧊 Replay (3D)</button>
       </li>
     </ul>
 
@@ -228,66 +219,6 @@
             </div>
           </div>
 
-        </div>
-      </div>
-
-      <!-- ==================== REPLAY 2D TAB ==================== -->
-      <div class="tab-pane fade" id="replay2d" role="tabpanel">
-        <div class="card mb-3">
-          <div class="card-body d-flex gap-2 align-items-end">
-            <div style="flex:1;">
-              <label class="form-label text-secondary small mb-1 fw-bold">Sesi ID (Recording)</label>
-              <input type="text" id="r2dSessionId"
-                class="form-control bg-dark border-secondary text-light form-control-sm"
-                placeholder="Contoh: 20260826_123456_abc">
-            </div>
-            <button class="btn btn-info btn-sm text-white" id="r2dLoadBtn">Load Sesi</button>
-            <div class="ms-3">
-              <button class="btn btn-success btn-sm" id="r2dPlayBtn" disabled style="width: 100px;">▶ Play</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-body">
-            <div class="canvas-container">
-              <canvas id="r2dCanvas"></canvas>
-            </div>
-            <div class="mt-3 d-flex align-items-center gap-3">
-              <span id="r2dFrameLabel" class="badge bg-secondary" style="min-width: 60px;">0 / 0</span>
-              <input type="range" class="form-range scrubber-bar m-0" id="r2dScrubber" min="0" max="0" value="0">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ==================== REPLAY 3D TAB ==================== -->
-      <div class="tab-pane fade" id="replay3d" role="tabpanel">
-        <div class="card mb-3">
-          <div class="card-body d-flex gap-2 align-items-end flex-wrap">
-            <div style="flex:1;">
-              <label class="form-label text-secondary small mb-1 fw-bold">Sesi ID (Recording)</label>
-              <input type="text" id="r3dSessionId"
-                class="form-control bg-dark border-secondary text-light form-control-sm"
-                placeholder="Gunakan ID sesi yang sama">
-            </div>
-            <button class="btn btn-info btn-sm text-white" id="r3dLoadBtn">Load Sesi</button>
-            <button class="btn btn-success btn-sm ms-3" id="r3dPlayBtn" disabled style="width: 100px;">▶ Play</button>
-            <button class="btn btn-outline-info btn-sm ms-auto" id="r3dSaveBtn" disabled>💾 Download Frame
-              Image</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-body">
-            <div class="canvas-container" id="r3dContainer">
-              <!-- Three.js renderer goes here -->
-            </div>
-            <div class="mt-3 d-flex align-items-center gap-3">
-              <span id="r3dFrameLabel" class="badge bg-secondary" style="min-width: 60px;">0 / 0</span>
-              <input type="range" class="form-range scrubber-bar m-0" id="r3dScrubber" min="0" max="0" value="0">
-            </div>
-          </div>
         </div>
       </div>
 
@@ -418,7 +349,7 @@
     // Live Detect WS
     let detWs = null, detTimer = null;
     toggleDet.onchange = () => {
-      if (!toggleDet.checked) { if (detWs) detWs.close(); if (detTimer) clearInterval(detTimer); overlayCanvas.getContext('2d').clearRect(0, 0, overlayCanvas.width, overlayCanvas.height); logSys('Deteksi dihentikan.'); return; }
+      if (!toggleDet.checked) { if (detWs) detWs.close(); if (detTimer) clearInterval(detTimer); currentDetections = []; logSys('Deteksi dihentikan.'); return; }
       detWs = new WebSocket(`${getWsUrl()}/ws/detect`);
       detWs.onopen = () => {
         logSys('🟢 Deteksi YOLO berjalan.');
@@ -428,7 +359,7 @@
           c.toBlob(b => { if (detWs.readyState === 1 && b) detWs.send(b); }, 'image/jpeg', 0.6);
         }, 200);
       };
-      detWs.onmessage = e => { try { const data = JSON.parse(e.data); drawTacticalHUD(overlayCanvas.getContext('2d'), overlayCanvas.width, overlayCanvas.height, data.detections || []); } catch (e) { } };
+      detWs.onmessage = e => { try { const data = JSON.parse(e.data); if (data.detections) currentDetections = data.detections; } catch (e) { } };
       detWs.onclose = () => { toggleDet.checked = false; };
     };
 
@@ -439,10 +370,7 @@
         if (recWs) { try { await fetch(`${getUrl()}/recordings/${recId}/stop`, { method: 'POST', headers: getHeaders() }); } catch (e) { } recWs.close(); }
         if (recTimer) clearInterval(recTimer);
         document.getElementById('recIndicator').style.display = 'none';
-        logSys(`🔴 Rekaman disimpan. ID: ${recId}`);
-        // Autofill ID in other tabs
-        document.getElementById('r2dSessionId').value = recId;
-        document.getElementById('r3dSessionId').value = recId;
+        logSys(`🔴 Rekaman disimpan. ID: ${recId} — Buka <a href="/replay?session=${recId}" style="color:#22d3ee;">/replay</a> untuk memutar ulang.`);
         return;
       }
       try {
@@ -458,6 +386,7 @@
             c.toBlob(b => { if (recWs.readyState === 1 && b) { recWs.send(b); fn++; document.getElementById('recFrameCount').textContent = fn; } }, 'image/jpeg', 0.7);
           }, 200);
         };
+        recWs.onmessage = e => { try { const data = JSON.parse(e.data); if (data.detections) currentDetections = data.detections; } catch (e) { } };
       } catch (e) { logSys(e.message); toggleRec.checked = false; }
     }
 
@@ -483,127 +412,6 @@
         } catch (e) { document.getElementById('localizeResArea').innerHTML = '<div class="text-danger p-2 text-center">❌ Gagal Koneksi Server.</div>'; }
       }, 'image/jpeg');
     }
-
-    // --- 2. REPLAY 2D LOGIC ---
-    let r2dFrames = [], r2dManifest = null, r2dPlayTimer = null, r2dPlaying = false, r2dImg = new Image();
-    const r2dCanvas = document.getElementById('r2dCanvas'); const r2dCtx = r2dCanvas.getContext('2d');
-
-    document.getElementById('r2dLoadBtn').onclick = async () => {
-      const id = document.getElementById('r2dSessionId').value.trim(); if (!id) return alert("Sesi ID tidak boleh kosong!");
-      try {
-        const r = await fetch(`${getUrl()}/recordings/${id}/manifest`, { headers: getHeaders() });
-        if (!r.ok) throw new Error("Manifest tidak ditemukan (404)");
-        r2dManifest = await r.json(); r2dFrames = r2dManifest.frames || [];
-        if (r2dFrames.length > 0) {
-          document.getElementById('r2dScrubber').max = r2dFrames.length - 1;
-          document.getElementById('r2dPlayBtn').disabled = false;
-          r2dShowFrame(0);
-        }
-      } catch (e) { alert(e.message); }
-    };
-    function r2dShowFrame(idx) {
-      if (idx < 0 || idx >= r2dFrames.length) return;
-      const id = r2dManifest.session_id, f = r2dFrames[idx];
-      document.getElementById('r2dScrubber').value = idx;
-      document.getElementById('r2dFrameLabel').textContent = `${idx + 1} / ${r2dFrames.length}`;
-      r2dImg.src = `${getUrl()}/recordings/${id}/frames/${f.file}`;
-      r2dImg.onload = () => {
-        r2dCanvas.width = r2dImg.width; r2dCanvas.height = r2dImg.height;
-        r2dCtx.drawImage(r2dImg, 0, 0);
-        drawTacticalHUD(r2dCtx, r2dCanvas.width, r2dCanvas.height, f.detections || []);
-      };
-    }
-    document.getElementById('r2dScrubber').oninput = e => r2dShowFrame(parseInt(e.target.value));
-    document.getElementById('r2dPlayBtn').onclick = () => {
-      r2dPlaying = !r2dPlaying; document.getElementById('r2dPlayBtn').innerHTML = r2dPlaying ? '⏸ Pause' : '▶ Play';
-      const loop = () => {
-        if (!r2dPlaying) return;
-        let nx = parseInt(document.getElementById('r2dScrubber').value) + 1;
-        if (nx >= r2dFrames.length) { r2dPlaying = false; document.getElementById('r2dPlayBtn').innerHTML = '▶ Play'; return; }
-        r2dShowFrame(nx); setTimeout(loop, 100);
-      };
-      if (r2dPlaying) loop();
-    };
-
-    // --- 3. REPLAY 3D LOGIC (THREE.JS) ---
-    let r3dFrames = [], r3dManifest = null, r3dPlayTimer = null, r3dPlaying = false;
-    const r3dContainer = document.getElementById('r3dContainer');
-    const scene = new THREE.Scene();
-    const camera3D = new THREE.PerspectiveCamera(75, r3dContainer.clientWidth / (r3dContainer.clientHeight || 400), 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-
-    // Fix container dimensions loading issue by tracking clicks on 3D Tab
-    document.getElementById('replay3d-tab').addEventListener('shown.bs.tab', function () {
-      if (r3dContainer.clientWidth > 0) {
-        renderer.setSize(r3dContainer.clientWidth, r3dContainer.clientHeight);
-        camera3D.aspect = r3dContainer.clientWidth / r3dContainer.clientHeight;
-        camera3D.updateProjectionMatrix();
-      }
-    });
-
-    r3dContainer.appendChild(renderer.domElement);
-
-    const geo = new THREE.PlaneGeometry(16, 9);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide });
-    const plane = new THREE.Mesh(geo, mat); scene.add(plane); camera3D.position.z = 10;
-
-    function render3D() { requestAnimationFrame(render3D); renderer.render(scene, camera3D); }
-    render3D();
-
-    document.getElementById('r3dLoadBtn').onclick = async () => {
-      const id = document.getElementById('r3dSessionId').value.trim(); if (!id) return alert("Sesi ID kosong!");
-      try {
-        const r = await fetch(`${getUrl()}/recordings/${id}/manifest`, { headers: getHeaders() });
-        r3dManifest = await r.json(); r3dFrames = r3dManifest.frames || [];
-        if (r3dFrames.length > 0) {
-          document.getElementById('r3dScrubber').max = r3dFrames.length - 1;
-          document.getElementById('r3dPlayBtn').disabled = false;
-          document.getElementById('r3dSaveBtn').disabled = false;
-          r3dShowFrame(0);
-        }
-      } catch (e) { alert(e.message); }
-    };
-
-    const r3dHiddenCanvas = document.createElement('canvas');
-    const r3dHiddenCtx = r3dHiddenCanvas.getContext('2d');
-    const r3dImg = new Image();
-    r3dImg.crossOrigin = "Anonymous";
-
-    function r3dShowFrame(idx) {
-      if (idx < 0 || idx >= r3dFrames.length) return;
-      const id = r3dManifest.session_id, f = r3dFrames[idx];
-      document.getElementById('r3dScrubber').value = idx;
-      document.getElementById('r3dFrameLabel').textContent = `${idx + 1} / ${r3dFrames.length}`;
-
-      r3dImg.onload = () => {
-        r3dHiddenCanvas.width = r3dImg.width;
-        r3dHiddenCanvas.height = r3dImg.height;
-        r3dHiddenCtx.drawImage(r3dImg, 0, 0);
-        // Bake the HUD into this frame
-        drawTacticalHUD(r3dHiddenCtx, r3dHiddenCanvas.width, r3dHiddenCanvas.height, f.detections || []);
-
-        const tex = new THREE.CanvasTexture(r3dHiddenCanvas);
-        plane.material.map = tex;
-        plane.material.needsUpdate = true;
-        plane.rotation.y = (idx / r3dFrames.length) * Math.PI * 0.1 - (Math.PI * 0.05); // pseudo-3D
-      };
-      r3dImg.src = `${getUrl()}/recordings/${id}/frames/${f.file}`;
-    }
-    document.getElementById('r3dScrubber').oninput = e => r3dShowFrame(parseInt(e.target.value));
-    document.getElementById('r3dPlayBtn').onclick = () => {
-      r3dPlaying = !r3dPlaying; document.getElementById('r3dPlayBtn').innerHTML = r3dPlaying ? '⏸ Pause' : '▶ Play';
-      const loop = () => {
-        if (!r3dPlaying) return;
-        let nx = parseInt(document.getElementById('r3dScrubber').value) + 1;
-        if (nx >= r3dFrames.length) { r3dPlaying = false; document.getElementById('r3dPlayBtn').innerHTML = '▶ Play'; return; }
-        r3dShowFrame(nx); setTimeout(loop, 100);
-      };
-      if (r3dPlaying) loop();
-    };
-    document.getElementById('r3dSaveBtn').onclick = () => {
-      const a = document.createElement('a'); a.href = renderer.domElement.toDataURL('image/png');
-      a.download = `3d_replay_${document.getElementById('r3dScrubber').value}.png`; a.click();
-    };
   </script>
 </body>
 
