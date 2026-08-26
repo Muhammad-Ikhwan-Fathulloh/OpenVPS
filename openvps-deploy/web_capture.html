@@ -123,6 +123,95 @@
       width: 100%;
       margin-top: 10px;
     }
+
+    /* ===== VPS VISUAL OVERLAY ===== */
+    .vps-hud-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* ===== VPS RESULT PANEL ===== */
+    .vps-panel {
+      background: #0f1219;
+      border: 1px solid #232839;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .vps-panel .vps-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 10px;
+    }
+
+    .vps-coord-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .vps-axis {
+      font-size: 0.65rem;
+      font-weight: 800;
+      width: 16px;
+      text-align: center;
+      border-radius: 3px;
+      padding: 1px 0;
+    }
+    .vps-axis.x { background: rgba(239,68,68,.2); color: #f87171; }
+    .vps-axis.y { background: rgba(34,197,94,.2); color: #4ade80; }
+    .vps-axis.z { background: rgba(59,130,246,.2); color: #60a5fa; }
+
+    .vps-bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: #1e2536;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .vps-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .vps-axis.x ~ .vps-bar-wrap .vps-bar-fill { background: #f87171; }
+    .vps-axis.y ~ .vps-bar-wrap .vps-bar-fill { background: #4ade80; }
+    .vps-axis.z ~ .vps-bar-wrap .vps-bar-fill { background: #60a5fa; }
+
+    .vps-val {
+      font-size: 0.72rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #e2e8f0;
+      width: 52px;
+      text-align: right;
+    }
+
+    .vps-compass-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0 6px;
+    }
+
+    .vps-inlier-bar {
+      height: 8px;
+      background: #1e2536;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .vps-inlier-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #06b6d4, #22d3ee);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
   </style>
 </head>
 
@@ -131,8 +220,28 @@
   <nav class="navbar navbar-dark bg-dark border-bottom border-secondary mb-4 px-3"
     style="background-color: #11141c !important;">
     <span class="navbar-brand mb-0 h1 text-info fw-bold">📷 OpenVPS Dashboard</span>
-    <div class="d-flex w-auto gap-3 align-items-center">
+    <div class="d-flex w-auto gap-3 align-items-center flex-wrap">
       <a href="/replay" class="btn btn-sm btn-outline-info text-info fw-bold" style="text-decoration:none;">🎬 Replay</a>
+
+      <!-- Provider Toggle -->
+      <div class="d-flex align-items-center gap-2 border border-secondary rounded px-2 py-1" style="background:#1a1e28; flex-shrink:0;">
+        <small class="text-secondary fw-bold text-uppercase" style="font-size:0.65rem; letter-spacing:.5px; white-space:nowrap;">Server</small>
+        <select id="serverPreset" class="form-select form-select-sm bg-dark text-light border-secondary" style="width:160px; font-size:0.75rem;" onchange="applyPreset()">
+        </select>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem; padding:3px 8px; white-space:nowrap;" onclick="addPreset()" title="Tambah server baru">＋</button>
+        <button class="btn btn-sm btn-outline-danger" style="font-size:0.72rem; padding:3px 8px;" onclick="removePreset()" title="Hapus server ini">✕</button>
+      </div>
+
+      <!-- Multiset credentials (shown when multiset preset selected) -->
+      <div id="multisetCredsNav" style="display:none;" class="d-flex gap-2">
+        <input type="text" id="multisetClientId"
+          class="form-control form-control-sm bg-dark text-light border-secondary"
+          style="width:130px;" placeholder="Client ID">
+        <input type="password" id="multisetClientSecret"
+          class="form-control form-control-sm bg-dark text-light border-secondary"
+          style="width:140px;" placeholder="Client Secret">
+      </div>
+
       <input type="text" id="serverUrl" class="form-control form-control-sm bg-dark text-light border-secondary"
         value="http://localhost:8000" style="width: 200px;" placeholder="Server URL">
       <input type="text" id="apiKey" class="form-control form-control-sm bg-dark text-light border-secondary"
@@ -164,6 +273,7 @@
                 <div class="canvas-container mb-3">
                   <video id="videoElement" autoplay playsinline muted></video>
                   <canvas id="overlayCanvas" class="hud-overlay"></canvas>
+                  <canvas id="vpsHudCanvas" class="vps-hud-canvas"></canvas>
                   <div class="status-badge" id="recIndicator" style="display:none; color: #ef4444;">⏺ REC: <span
                       id="recFrameCount">0</span> frame</div>
                 </div>
@@ -211,10 +321,86 @@
             </div>
 
             <div class="card" id="localizeResultCard">
-              <div class="card-header">Hasil VPS Localize</div>
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📍 Hasil VPS Positioning</span>
+                <span id="vpsStatusBadge" class="badge bg-secondary">—</span>
+              </div>
               <div class="card-body p-2" id="localizeResArea">
-                <div class="text-center text-muted p-4 small">Tekan "Tes Localize VPS" untuk melihat hasil 6DoF di sini.
+
+                <!-- IDLE STATE -->
+                <div id="vpsIdle" class="text-center text-muted p-3 small">
+                  Tekan <b>"📍 Tes Localize VPS"</b> untuk melihat<br>hasil visual positioning di sini.
                 </div>
+
+                <!-- RESULT STATE (hidden until data comes) -->
+                <div id="vpsResult" style="display:none;">
+
+                  <!-- Compass + Provider badge -->
+                  <div class="vps-compass-wrap">
+                    <canvas id="compassCanvas" width="110" height="110"></canvas>
+                  </div>
+                  <div class="text-center mb-2">
+                    <span id="vpsBadgeProvider" class="badge bg-dark border border-secondary" style="font-size:0.7rem;"></span>
+                    <span id="vpsBadgeKeyframe" class="badge bg-dark border border-secondary ms-1" style="font-size:0.7rem; color:#22d3ee;"></span>
+                  </div>
+
+                  <!-- Position X Y Z bars -->
+                  <div class="vps-panel mb-2">
+                    <div class="vps-title">📌 Posisi (meter)</div>
+                    <div class="vps-coord-row">
+                      <span class="vps-axis x">X</span>
+                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barPX" style="width:50%;background:#f87171;"></div></div>
+                      <span class="vps-val" id="valPX">0.000</span>
+                    </div>
+                    <div class="vps-coord-row">
+                      <span class="vps-axis y">Y</span>
+                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barPY" style="width:50%;background:#4ade80;"></div></div>
+                      <span class="vps-val" id="valPY">0.000</span>
+                    </div>
+                    <div class="vps-coord-row">
+                      <span class="vps-axis z">Z</span>
+                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barPZ" style="width:50%;background:#60a5fa;"></div></div>
+                      <span class="vps-val" id="valPZ">0.000</span>
+                    </div>
+                  </div>
+
+                  <!-- Rotation R P Y bars -->
+                  <div class="vps-panel mb-2">
+                    <div class="vps-title">🔄 Rotasi (rad)</div>
+                    <div class="vps-coord-row">
+                      <span class="vps-axis x">R</span>
+                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barRR" style="width:50%;background:#f87171;"></div></div>
+                      <span class="vps-val" id="valRR">0.000</span>
+                    </div>
+                    <div class="vps-coord-row">
+                      <span class="vps-axis y">P</span>
+                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barRP" style="width:50%;background:#4ade80;"></div></div>
+                      <span class="vps-val" id="valRP">0.000</span>
+                    </div>
+                    <div class="vps-coord-row">
+                      <span class="vps-axis z">Y</span>
+                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barRY" style="width:50%;background:#60a5fa;"></div></div>
+                      <span class="vps-val" id="valRY">0.000</span>
+                    </div>
+                  </div>
+
+                  <!-- Inliers confidence -->
+                  <div class="vps-panel">
+                    <div class="vps-title">🎯 Confidence (Inliers)</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span id="vpsInlierCount" style="font-size:1.4rem;font-weight:800;color:#22d3ee;">0</span>
+                      <span style="font-size:0.7rem;color:#64748b;">inlier matches</span>
+                    </div>
+                    <div class="vps-inlier-bar">
+                      <div class="vps-inlier-fill" id="inlierBar" style="width:0%"></div>
+                    </div>
+                  </div>
+
+                </div><!-- /#vpsResult -->
+
+                <!-- ERROR STATE -->
+                <div id="vpsError" style="display:none;" class="text-danger p-2 text-center small"></div>
+
               </div>
             </div>
           </div>
@@ -237,6 +423,82 @@
     const getUrl = () => document.getElementById('serverUrl').value.replace(/\/$/, '');
     const getWsUrl = () => getUrl().replace(/^http/, 'ws');
     const logSys = (m) => { document.getElementById('sysLog').innerHTML = m; };
+
+    // --- SERVER PRESETS ---
+    const DEFAULT_PRESETS = [
+      { label: '🖥️ Localhost', url: 'http://localhost:8000', apiKey: '', type: 'openvps' },
+      { label: '☁️ Multiset', url: 'https://api.multiset.ai', apiKey: '', type: 'multiset' },
+    ];
+    const STORAGE_KEY = 'openvps_server_presets';
+
+    function loadPresets() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_PRESETS; }
+      catch { return DEFAULT_PRESETS; }
+    }
+    function savePresets(presets) { localStorage.setItem(STORAGE_KEY, JSON.stringify(presets)); }
+
+    function renderPresetDropdown() {
+      const sel = document.getElementById('serverPreset');
+      const presets = loadPresets();
+      const cur = sel.value;
+      sel.innerHTML = presets.map((p, i) =>
+        `<option value="${i}" ${cur == i ? 'selected' : ''}>${p.label}</option>`
+      ).join('');
+    }
+
+    function applyPreset() {
+      const presets = loadPresets();
+      const idx = parseInt(document.getElementById('serverPreset').value) || 0;
+      const p = presets[idx];
+      if (!p) return;
+      document.getElementById('serverUrl').value = p.url;
+      document.getElementById('apiKey').value = p.apiKey || '';
+      const isMultiset = p.type === 'multiset';
+      document.getElementById('multisetCredsNav').style.display = isMultiset ? 'flex' : 'none';
+      currentProvider = isMultiset ? 'multiset' : 'openvps';
+      logSys(`🔌 Server: <b>${p.label}</b> — ${p.url}`);
+    }
+
+    function addPreset() {
+      const label = prompt('Nama server (contoh: VPS Production):');
+      if (!label) return;
+      const url = prompt('URL server (contoh: https://openvps.example.com):');
+      if (!url) return;
+      const apiKey = prompt('API Key (kosongkan jika tidak ada):') || '';
+      const typeRaw = prompt('Tipe (ketik "multiset" untuk Multiset, kosongkan untuk OpenVPS):') || '';
+      const type = typeRaw.trim().toLowerCase() === 'multiset' ? 'multiset' : 'openvps';
+      const presets = loadPresets();
+      presets.push({ label, url, apiKey, type });
+      savePresets(presets);
+      renderPresetDropdown();
+      document.getElementById('serverPreset').value = presets.length - 1;
+      applyPreset();
+    }
+
+    function removePreset() {
+      const sel = document.getElementById('serverPreset');
+      const idx = parseInt(sel.value);
+      const presets = loadPresets();
+      if (presets.length <= 1) { alert('Minimal satu server harus ada.'); return; }
+      if (!confirm(`Hapus "${presets[idx].label}"?`)) return;
+      presets.splice(idx, 1);
+      savePresets(presets);
+      renderPresetDropdown();
+      applyPreset();
+    }
+
+    // Init presets on load
+    renderPresetDropdown();
+    applyPreset();
+
+    // Save apiKey changes back to current preset
+    document.getElementById('apiKey').addEventListener('change', () => {
+      const presets = loadPresets();
+      const idx = parseInt(document.getElementById('serverPreset').value) || 0;
+      if (presets[idx]) { presets[idx].apiKey = document.getElementById('apiKey').value.trim(); savePresets(presets); }
+    });
+
+    let currentProvider = 'openvps';
 
     // --- HUD MODULE (Taktis) ---
     // Persistent detections data
@@ -390,26 +652,251 @@
       } catch (e) { logSys(e.message); toggleRec.checked = false; }
     }
 
+    // ===== VPS VISUAL ENGINE =====
+    let lastVpsResult = null;
+    const vpsHudCanvas = document.getElementById('vpsHudCanvas');
+    const vpsHudCtx = vpsHudCanvas.getContext('2d');
+
+    function syncVpsCanvas() {
+      vpsHudCanvas.width = video.videoWidth || 640;
+      vpsHudCanvas.height = video.videoHeight || 360;
+    }
+
+    // Map value in range to 0-100% for bar (centered at 50%)
+    function valToBar(v, range = 5) {
+      return Math.min(100, Math.max(0, ((v + range) / (range * 2)) * 100)).toFixed(1);
+    }
+
+    function drawCompass(yaw) {
+      const canvas = document.getElementById('compassCanvas');
+      const ctx = canvas.getContext('2d');
+      const cx = 55, cy = 55, r = 48;
+      ctx.clearRect(0, 0, 110, 110);
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = '#232839';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#0b0e14';
+      ctx.fill();
+
+      // Cardinal labels
+      const cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
+      cardinals.forEach(([label, deg]) => {
+        const angle = (deg - yaw * 180 / Math.PI) * Math.PI / 180;
+        const lx = cx + (r - 14) * Math.sin(angle);
+        const ly = cy - (r - 14) * Math.cos(angle);
+        ctx.font = label === 'N' ? 'bold 11px monospace' : '10px monospace';
+        ctx.fillStyle = label === 'N' ? '#f87171' : '#64748b';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, lx, ly);
+      });
+
+      // Needle
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-yaw);
+      // North (red)
+      ctx.beginPath();
+      ctx.moveTo(0, -r + 20);
+      ctx.lineTo(-5, 4);
+      ctx.lineTo(5, 4);
+      ctx.closePath();
+      ctx.fillStyle = '#f87171';
+      ctx.fill();
+      // South (white)
+      ctx.beginPath();
+      ctx.moveTo(0, r - 20);
+      ctx.lineTo(-5, -4);
+      ctx.lineTo(5, -4);
+      ctx.closePath();
+      ctx.fillStyle = '#475569';
+      ctx.fill();
+      ctx.restore();
+
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#22d3ee';
+      ctx.fill();
+    }
+
+    function drawVpsHud(pos, rot) {
+      syncVpsCanvas();
+      const w = vpsHudCanvas.width, h = vpsHudCanvas.height;
+      vpsHudCtx.clearRect(0, 0, w, h);
+      if (!pos) return;
+
+      const [px, py, pz] = pos;
+      const [rr, rp, ry] = rot;
+      const scale = w / 640;
+
+      // ── Bottom-left: position pill ──
+      const posText = `X:${px.toFixed(2)}  Y:${py.toFixed(2)}  Z:${pz.toFixed(2)}`;
+      const pW = vpsHudCtx.measureText(posText).width + 20;
+      vpsHudCtx.fillStyle = 'rgba(0,0,0,0.55)';
+      roundRect(vpsHudCtx, 10 * scale, h - 34 * scale, pW * scale, 22 * scale, 5 * scale);
+      vpsHudCtx.font = `${11 * scale}px monospace`;
+      vpsHudCtx.fillStyle = '#22d3ee';
+      vpsHudCtx.fillText(posText, 20 * scale, h - 19 * scale);
+
+      // ── Bottom-right: yaw angle ──
+      const yawDeg = (ry * 180 / Math.PI).toFixed(1);
+      const yawText = `YAW ${yawDeg}°`;
+      vpsHudCtx.fillStyle = 'rgba(0,0,0,0.55)';
+      const yW = vpsHudCtx.measureText(yawText).width + 20;
+      roundRect(vpsHudCtx, w - (yW + 10) * scale, h - 34 * scale, yW * scale, 22 * scale, 5 * scale);
+      vpsHudCtx.fillStyle = '#a78bfa';
+      vpsHudCtx.fillText(yawText, w - yW * scale, h - 19 * scale);
+
+      // ── Top-right: 3-axis arrows ──
+      drawAxisArrows(vpsHudCtx, w - 60 * scale, 60 * scale, 40 * scale, rr, rp, ry);
+
+      // ── Top-left: VPS badge ──
+      vpsHudCtx.fillStyle = 'rgba(6,182,212,0.15)';
+      roundRect(vpsHudCtx, 10 * scale, 10 * scale, 72 * scale, 18 * scale, 5 * scale);
+      vpsHudCtx.font = `bold ${9 * scale}px monospace`;
+      vpsHudCtx.fillStyle = '#22d3ee';
+      vpsHudCtx.fillText('◉ VPS LOCKED', 16 * scale, 22 * scale);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawAxisArrows(ctx, cx, cy, len, roll, pitch, yaw) {
+      // Simple 2D projection of 3D axes
+      const axes = [
+        { label: 'X', color: '#f87171', dx: Math.cos(yaw),       dy: -Math.sin(pitch) },
+        { label: 'Y', color: '#4ade80', dx: Math.sin(yaw),       dy:  Math.cos(pitch) },
+        { label: 'Z', color: '#60a5fa', dx: Math.sin(roll) * 0.4, dy: -Math.cos(roll) },
+      ];
+      // Background circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, len + 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fill();
+
+      axes.forEach(a => {
+        const ex = cx + a.dx * len;
+        const ey = cy + a.dy * len;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ex, ey);
+        ctx.strokeStyle = a.color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.font = 'bold 10px monospace';
+        ctx.fillStyle = a.color;
+        ctx.fillText(a.label, ex + 3, ey + 4);
+      });
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+    }
+
+    function updateVpsPanelUI(d) {
+      const pos = d.position || [0, 0, 0];
+      const rot = d.rotation || [0, 0, 0];
+      const inliers = d.n_inliers || 0;
+
+      // Show result panel
+      document.getElementById('vpsIdle').style.display = 'none';
+      document.getElementById('vpsError').style.display = 'none';
+      document.getElementById('vpsResult').style.display = 'block';
+      document.getElementById('vpsStatusBadge').textContent = '✅ OK';
+      document.getElementById('vpsStatusBadge').className = 'badge bg-success';
+
+      // Provider & keyframe badges
+      const provLabel = currentProvider === 'multiset' ? '☁️ Multiset' : '🖥️ VPS';
+      document.getElementById('vpsBadgeProvider').textContent = provLabel;
+      document.getElementById('vpsBadgeKeyframe').textContent = d.keyframe ? `🗝 ${d.keyframe}` : '';
+
+      // Position bars
+      document.getElementById('valPX').textContent = pos[0].toFixed(3);
+      document.getElementById('valPY').textContent = pos[1].toFixed(3);
+      document.getElementById('valPZ').textContent = pos[2].toFixed(3);
+      document.getElementById('barPX').style.width = valToBar(pos[0]) + '%';
+      document.getElementById('barPY').style.width = valToBar(pos[1]) + '%';
+      document.getElementById('barPZ').style.width = valToBar(pos[2]) + '%';
+
+      // Rotation bars (range ±π)
+      document.getElementById('valRR').textContent = rot[0].toFixed(3);
+      document.getElementById('valRP').textContent = rot[1].toFixed(3);
+      document.getElementById('valRY').textContent = rot[2].toFixed(3);
+      document.getElementById('barRR').style.width = valToBar(rot[0], Math.PI) + '%';
+      document.getElementById('barRP').style.width = valToBar(rot[1], Math.PI) + '%';
+      document.getElementById('barRY').style.width = valToBar(rot[2], Math.PI) + '%';
+
+      // Inliers
+      document.getElementById('vpsInlierCount').textContent = inliers;
+      document.getElementById('inlierBar').style.width = Math.min(100, inliers * 2) + '%';
+
+      // Compass (yaw = rot[2])
+      drawCompass(rot[2]);
+
+      // HUD overlay on video
+      drawVpsHud(pos, rot);
+    }
+
     // Tes Localize
     document.getElementById('testLocBtn').onclick = async () => {
-      document.getElementById('localizeResArea').innerHTML = '<div class="text-info text-center p-3">Memproses...</div>';
-      const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight; c.getContext('2d').drawImage(video, 0, 0);
+      document.getElementById('vpsStatusBadge').textContent = '⏳';
+      document.getElementById('vpsStatusBadge').className = 'badge bg-warning text-dark';
+      document.getElementById('vpsIdle').style.display = 'none';
+      document.getElementById('vpsResult').style.display = 'none';
+      document.getElementById('vpsError').style.display = 'none';
+
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0);
       c.toBlob(async blob => {
-        const fd = new FormData(); fd.append('image', blob, 't.jpg');
+        const fd = new FormData();
+        fd.append('image', blob, 't.jpg');
+        fd.append('provider', currentProvider);
+        if (currentProvider === 'multiset') {
+          const cid = document.getElementById('multisetClientId').value.trim();
+          const csec = document.getElementById('multisetClientSecret').value.trim();
+          if (cid) fd.append('multiset_client_id', cid);
+          if (csec) fd.append('multiset_client_secret', csec);
+        }
         try {
           const r = await fetch(`${getUrl()}/relocalize`, { method: 'POST', headers: getHeaders(), body: fd });
           const d = await r.json();
           if (d.success) {
-            const pos = d.position || [0, 0, 0], rot = d.rotation || [0, 0, 0];
-            document.getElementById('localizeResArea').innerHTML = `
-              <div class="row g-2 text-center small text-light">
-                <div class="col-6"><div class="p-2 border border-secondary rounded">Stat: <b class="text-success">OK</b></div></div>
-                <div class="col-6"><div class="p-2 border border-secondary rounded">Inliers: <b class="text-info">${d.n_inliers}</b></div></div>
-                <div class="col-12"><div class="p-2 border border-secondary rounded text-start">Posisi (X,Y,Z): <strong class="text-white">${pos.map(x => x.toFixed(3)).join(', ')}</strong></div></div>
-                <div class="col-12"><div class="p-2 border border-secondary rounded text-start">Rotasi (R,P,Y): <strong class="text-white">${rot.map(x => x.toFixed(3)).join(', ')}</strong></div></div>
-              </div>`;
-          } else document.getElementById('localizeResArea').innerHTML = '<div class="text-danger p-2 text-center">❌ Gagal VPS.</div>';
-        } catch (e) { document.getElementById('localizeResArea').innerHTML = '<div class="text-danger p-2 text-center">❌ Gagal Koneksi Server.</div>'; }
+            lastVpsResult = d;
+            updateVpsPanelUI(d);
+          } else {
+            document.getElementById('vpsStatusBadge').textContent = '❌ Gagal';
+            document.getElementById('vpsStatusBadge').className = 'badge bg-danger';
+            document.getElementById('vpsError').style.display = 'block';
+            document.getElementById('vpsError').textContent = '❌ ' + (d.message || 'Localize gagal');
+            document.getElementById('vpsIdle').style.display = 'none';
+          }
+        } catch (e) {
+          document.getElementById('vpsStatusBadge').textContent = '❌ Error';
+          document.getElementById('vpsStatusBadge').className = 'badge bg-danger';
+          document.getElementById('vpsError').style.display = 'block';
+          document.getElementById('vpsError').textContent = '❌ Gagal koneksi server: ' + e.message;
+        }
       }, 'image/jpeg');
     }
   </script>

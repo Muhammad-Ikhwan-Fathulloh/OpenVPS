@@ -290,37 +290,57 @@ def health():
 # ============================================================
 
 @app.post("/relocalize", response_model=RelocResponse, dependencies=[Depends(check_api_key), Depends(rate_limit)])
-async def relocalize(image: UploadFile = File(...), provider: str = Form("openvps")):
+async def relocalize(
+    image: UploadFile = File(...),
+    provider: str = Form("openvps"),
+    multiset_client_id: str = Form(""),
+    multiset_client_secret: str = Form(""),
+):
     raw = await image.read()
     check_upload_size(len(raw), config.MAX_UPLOAD_MB)
     img = decode_image(raw, color=False)
 
     if provider == "multiset":
-        if not config.MULTISET_CLIENT_ID or not config.MULTISET_CLIENT_SECRET:
-            return RelocResponse(success=False, message="Kredensial Multiset.ai belum dikonfigurasi di server")
-        
-        # Simulasi Autentikasi ke Multiset API untuk verifikasi credentials
+        # Gunakan credentials dari form jika ada, fallback ke config env
+        client_id = multiset_client_id.strip() or config.MULTISET_CLIENT_ID
+        client_secret = multiset_client_secret.strip() or config.MULTISET_CLIENT_SECRET
+
+        if not client_id or not client_secret:
+            return RelocResponse(
+                success=False,
+                message="Kredensial Multiset.ai belum diisi. Masukkan Client ID & Client Secret.",
+            )
+
         try:
-            auth_str = f"{config.MULTISET_CLIENT_ID}:{config.MULTISET_CLIENT_SECRET}"
+            auth_str = f"{client_id}:{client_secret}"
             b64_auth = base64.b64encode(auth_str.encode()).decode()
-            
-            # Mendapatkan token
+
             logger.info("Mengontak api.multiset.ai untuk token...")
-            resp = requests.post("https://api.multiset.ai/v1/m2m/token", 
-                                 headers={"Authorization": f"Basic {b64_auth}"}, timeout=5)
-            logger.info(f"Multiset Auth Response: {resp.status_code}")
-            
-            # MOCK hasil VPS Multiset untuk demo
+            resp = requests.post(
+                "https://api.multiset.ai/v1/m2m/token",
+                headers={"Authorization": f"Basic {b64_auth}"},
+                timeout=5,
+            )
+            logger.info("Multiset Auth Response: %s", resp.status_code)
+
+            if resp.status_code == 401:
+                return RelocResponse(success=False, message="Kredensial Multiset ditolak (401 Unauthorized).")
+            if not resp.ok:
+                return RelocResponse(success=False, message=f"Multiset API error: HTTP {resp.status_code}")
+
+            # MOCK hasil VPS Multiset untuk demo — ganti dengan real API call saat tersedia
             return RelocResponse(
                 success=True,
                 keyframe="Multiset_Cloud_Verified",
                 position=[-0.5, 1.2, 0.3],
                 rotation=[0.02, -0.01, 0.0],
-                n_inliers=42
+                n_inliers=42,
             )
+        except requests.exceptions.Timeout:
+            return RelocResponse(success=False, message="Timeout saat menghubungi Multiset API (>5s).")
         except Exception as e:
-            logger.error(f"Multiset error: {e}")
-            return RelocResponse(success=False, message=f"Multiset API Error: {str(e)}")
+            logger.error("Multiset error: %s", e)
+            return RelocResponse(success=False, message=f"Multiset API Error: {e}")
 
     # Default provider: OpenVPS (Local Pipeline)
     try:

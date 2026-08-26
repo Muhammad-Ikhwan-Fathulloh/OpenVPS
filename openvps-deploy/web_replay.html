@@ -348,6 +348,63 @@
       margin: 2px;
     }
 
+    /* ===== PROVIDER SELECTOR ===== */
+    .provider-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .provider-bar label.fl {
+      white-space: nowrap;
+    }
+
+    .provider-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .provider-select:focus {
+      border-color: var(--accent);
+    }
+
+    .provider-action-btn {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text2);
+      transition: all 0.15s;
+    }
+
+    .provider-action-btn:hover { border-color: var(--accent); color: var(--accent2); }
+    .provider-action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+    .multiset-fields {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     /* ===== SESSION LIST ===== */
     .session-panel {
       background: var(--panel);
@@ -470,6 +527,19 @@
   <!-- MAIN -->
   <div class="main">
 
+    <!-- PROVIDER SELECTOR -->
+    <div class="provider-bar">
+      <label class="fl">Server</label>
+      <select class="provider-select" id="serverPreset" onchange="applyPreset()" style="width:170px;"></select>
+      <button class="provider-action-btn" onclick="addPreset()" title="Tambah server baru">＋ Tambah</button>
+      <button class="provider-action-btn danger" onclick="removePreset()" title="Hapus server ini">✕</button>
+      <div class="multiset-fields" id="multisetFields" style="display:none;">
+        <input type="text" id="multisetClientId" placeholder="Client ID" style="width:150px;">
+        <input type="password" id="multisetClientSecret" placeholder="Client Secret" style="width:160px;">
+      </div>
+      <span id="providerBadge" style="font-size:0.72rem; color:var(--text3); margin-left:4px;"></span>
+    </div>
+
     <!-- TOP CONFIG BAR -->
     <div class="top-bar">
       <div>
@@ -555,6 +625,74 @@
   </div>
 
   <script>
+    // ============================================================
+    // SERVER PRESETS (shared localStorage dengan web_capture)
+    // ============================================================
+    const DEFAULT_PRESETS = [
+      { label: '🖥️ Localhost', url: 'http://localhost:8000', apiKey: '', type: 'openvps' },
+      { label: '☁️ Multiset',  url: 'https://api.multiset.ai', apiKey: '', type: 'multiset' },
+    ];
+    const STORAGE_KEY = 'openvps_server_presets';
+
+    function loadPresets() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_PRESETS; }
+      catch { return DEFAULT_PRESETS; }
+    }
+    function savePresets(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+
+    function renderPresetDropdown() {
+      const sel = document.getElementById('serverPreset');
+      const cur = sel.value;
+      const presets = loadPresets();
+      sel.innerHTML = presets.map((p, i) =>
+        `<option value="${i}" ${cur == i ? 'selected' : ''}>${p.label}</option>`
+      ).join('');
+    }
+
+    function applyPreset() {
+      const presets = loadPresets();
+      const idx = parseInt(document.getElementById('serverPreset').value) || 0;
+      const p = presets[idx];
+      if (!p) return;
+      serverUrlInput.value = p.url;
+      apiKeyInput.value = p.apiKey || '';
+      const isMultiset = p.type === 'multiset';
+      document.getElementById('multisetFields').style.display = isMultiset ? 'flex' : 'none';
+      document.getElementById('providerBadge').textContent = `→ ${p.url}`;
+    }
+
+    function addPreset() {
+      const label = prompt('Nama server (contoh: VPS Production):');
+      if (!label) return;
+      const url = prompt('URL server (contoh: https://openvps.example.com):');
+      if (!url) return;
+      const apiKey = prompt('API Key (kosongkan jika tidak ada):') || '';
+      const typeRaw = prompt('Tipe (ketik "multiset" untuk Multiset, kosongkan untuk OpenVPS):') || '';
+      const type = typeRaw.trim().toLowerCase() === 'multiset' ? 'multiset' : 'openvps';
+      const presets = loadPresets();
+      presets.push({ label, url, apiKey, type });
+      savePresets(presets);
+      renderPresetDropdown();
+      document.getElementById('serverPreset').value = presets.length - 1;
+      applyPreset();
+    }
+
+    function removePreset() {
+      const sel = document.getElementById('serverPreset');
+      const idx = parseInt(sel.value);
+      const presets = loadPresets();
+      if (presets.length <= 1) { alert('Minimal satu server harus ada.'); return; }
+      if (!confirm(`Hapus "${presets[idx].label}"?`)) return;
+      presets.splice(idx, 1);
+      savePresets(presets);
+      renderPresetDropdown();
+      applyPreset();
+    }
+
+    // Init
+    renderPresetDropdown();
+    applyPreset();
+
     // ============================================================
     // DOM
     // ============================================================
