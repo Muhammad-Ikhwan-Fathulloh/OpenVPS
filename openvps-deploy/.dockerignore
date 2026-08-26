@@ -1,7 +1,37 @@
+# Version control
 .git
+.gitignore
+
+# Secrets (jangan pernah masuk image)
 .env
+*.key
+*.pem
+*.crt
+
+# Docs & config lokal
 *.md
+*.txt.bak
+nginx.conf
+
+# Data runtime (di-mount lewat volume, bukan di-copy ke image)
 collected_photos/
 recordings/
+uploads/
+
+# Python artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# IDE & OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db

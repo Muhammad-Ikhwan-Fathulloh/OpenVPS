@@ -1,23 +1,30 @@
 # OpenVPS - Module 04 dependencies
-# Pin versi supaya deployment production reproducible (tidak tiba-tiba
-# berubah perilaku karena ada update mayor di salah satu library).
+# Versi di-pin supaya deployment reproducible.
 
+# --- Web framework ---
 fastapi==0.115.6
 starlette==0.41.3
 uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 pydantic==2.10.4
 
+# --- Image processing ---
+# opencv-python-headless: tanpa Qt/GTK (hemat ~50MB vs opencv-python)
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
 
-# Multi object detection (YOLO). ultralytics otomatis bawa torch - install
-# ini paling lama & paling besar ukurannya (~1-2GB dengan torch CPU).
-# Kalau VPS kamu hanya butuh relocalization + capture TANPA deteksi objek,
-# baris ultralytics ini boleh dihapus (endpoint /detect, /ws/detect, dan
-# /ws/recordings akan tetap start tapi melaporkan model belum siap lewat
-# /health, bukan bikin server crash).
+# --- HTTP client (dipakai server.py untuk Multiset API) ---
+requests==2.32.3
+
+# --- Object detection (YOLO CPU) ---
+# ultralytics menarik torch sebagai dependency, tapi torch-nya
+# sudah kita install terpisah via whl/cpu di Dockerfile (CPU-only build).
+# Kalau VPS tidak butuh deteksi objek sama sekali, baris ini bisa dihapus
+# (endpoint /detect & /ws/detect tetap ada tapi balas "model belum siap").
 ultralytics==8.3.55
 
-# Opsional (upgrade Modul 02 build_map.py ke reconstruction asli):
+# --- S3-compatible storage (opsional, hanya aktif kalau S3_BUCKET_NAME diset) ---
+boto3==1.35.99
+
+# --- Opsional: upgrade ke COLMAP reconstruction asli ---
 # pycolmap==3.11.1
