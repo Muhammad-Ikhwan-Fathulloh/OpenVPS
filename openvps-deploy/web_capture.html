@@ -65,6 +65,20 @@
       object-fit: contain;
     }
 
+    @media (max-width: 768px) {
+      .canvas-container {
+        aspect-ratio: 3/4;
+        /* Taller on mobile */
+      }
+
+      .canvas-container video,
+      .canvas-container canvas,
+      .canvas-container #three-container {
+        object-fit: cover;
+        /* Fill the area on mobile */
+      }
+    }
+
     .canvas-container .hud-overlay {
       pointer-events: none;
       z-index: 10;
@@ -556,6 +570,17 @@
       render();
     }
 
+    const labelColors = [
+      '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#10b981',
+      '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6',
+      '#d946ef', '#ec4899', '#f43f5e'
+    ];
+    function getLabelColor(label) {
+      let hash = 0;
+      for (let i = 0; i < label.length; i++) hash = label.charCodeAt(i) + ((hash << 5) - hash);
+      return labelColors[Math.abs(hash) % labelColors.length];
+    }
+
     function drawTacticalHUD(ctx, width, height, dets) {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
@@ -569,25 +594,24 @@
       // Object List top-left
       ctx.fillStyle = 'rgba(22, 25, 34, 0.75)'; ctx.fillRect(10, 10, 200, dets.length * 20 + 10);
       dets.forEach((d, i) => {
-        ctx.fillStyle = '#10b981'; ctx.font = '12px monospace';
+        const color = getLabelColor(d.label);
+        ctx.fillStyle = color; ctx.font = '12px monospace';
         const conf = d.confidence ? d.confidence : (d.conf ? d.conf : 0);
         ctx.fillText(`[HIT] ${d.label.padEnd(10).substring(0, 10)} ${(conf * 100).toFixed(0)}%`, 18, 27 + i * 20);
       });
 
-      // Boxes
+      // Boxes (Full Box)
       ctx.lineWidth = Math.max(2, width / 500);
       dets.forEach(d => {
         const box = d.bbox || d.box; if (!box) return;
         const [x1, y1, x2, y2] = box;
-        ctx.strokeStyle = '#22d3ee';
-        const L = 15; ctx.beginPath();
-        ctx.moveTo(x1, y1 + L); ctx.lineTo(x1, y1); ctx.lineTo(x1 + L, y1);
-        ctx.moveTo(x2 - L, y1); ctx.lineTo(x2, y1); ctx.lineTo(x2, y1 + L);
-        ctx.moveTo(x2, y2 - L); ctx.lineTo(x2, y2); ctx.lineTo(x2 - L, y2);
-        ctx.moveTo(x1 + L, y2); ctx.lineTo(x1, y2); ctx.lineTo(x1, y2 - L);
+        const color = getLabelColor(d.label);
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.rect(x1, y1, x2 - x1, y2 - y1);
         ctx.stroke();
         const conf = d.confidence ? d.confidence : (d.conf ? d.conf : 0);
-        ctx.fillStyle = '#22d3ee'; ctx.font = `bold ${Math.max(12, width / 60)}px monospace`;
+        ctx.fillStyle = color; ctx.font = `bold ${Math.max(12, width / 60)}px monospace`;
         ctx.fillText(`${d.label} ${(conf * 100).toFixed(0)}%`, x1 + 5, Math.max(15, y1 - 5));
       });
     }

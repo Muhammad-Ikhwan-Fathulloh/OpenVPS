@@ -1,5 +1,6 @@
 import boto3
 import logging
+import concurrent.futures
 from botocore.exceptions import ClientError
 from pathlib import Path
 import config
@@ -65,6 +66,26 @@ class S3Storage:
         except ClientError as e:
             logger.error(f"Gagal mengunggah objek {object_name} ke S3: {e}")
             return False
+
+    def upload_fileobj_batch(self, items: list[tuple], max_workers: int = 5) -> int:
+        """
+        Kirim multiple buffer memori secara bersamaan ke S3 Bucket menggunakan thread pool.
+        items: list of tuple (file_obj, object_name, content_type)
+        Mencegah pemblokiran aplikasi pada upload masal dan menstabilkan I/O.
+        """
+        if not self.enabled:
+            return 0
+            
+        n_saved = 0
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(self.upload_fileobj, f_obj, obj_name, ctype)
+                for (f_obj, obj_name, ctype) in items
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                if future.result():
+                    n_saved += 1
+        return n_saved
             
     def get_object_url(self, object_name: str) -> str:
         """Mengembalikan Public URL untuk bucket asalkan bucket S3 diatur untuk public read."""

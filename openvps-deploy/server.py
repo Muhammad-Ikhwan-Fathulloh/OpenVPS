@@ -53,7 +53,7 @@ import cv2
 import numpy as np
 from fastapi import (
     Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket,
-    WebSocketDisconnect,
+    WebSocketDisconnect, BackgroundTasks,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -415,6 +415,7 @@ async def upload_images(images: list[UploadFile] = File(...)):
         session_dir.mkdir(parents=True, exist_ok=True)
 
     n_saved = 0
+    s3_items = []
     for i, img_file in enumerate(images):
         raw = await img_file.read()
         if len(raw) > config.MAX_UPLOAD_MB * 1024 * 1024:
@@ -427,15 +428,16 @@ async def upload_images(images: list[UploadFile] = File(...)):
         object_name = f"uploads/{session_id}/frame_{i:03d}.jpg"
         
         if s3_storage.enabled:
-            # Upload langsung ke S3 dari memory
-            success = s3_storage.upload_fileobj(BytesIO(raw), object_name, content_type='image/jpeg')
-            if success:
-                n_saved += 1
+            # Tampung untuk diupload paralel
+            s3_items.append((BytesIO(raw), object_name, 'image/jpeg'))
         else:
             # Simpan ke disk lokal
             out_path = session_dir / f"frame_{i:03d}.jpg"
             out_path.write_bytes(raw)
             n_saved += 1
+
+    if s3_storage.enabled and s3_items:
+        n_saved += s3_storage.upload_fileobj_batch(s3_items)
 
     return UploadResponse(success=True, session_id=session_id, n_saved=n_saved, folder=f"s3://uploads/{session_id}" if s3_storage.enabled else str(session_dir))
 
@@ -567,14 +569,43 @@ async def ws_record(websocket: WebSocket, session_id: str):
         logger.info("Recording %s: klien disconnect setelah %d frame (belum di-stop eksplisit)", session_id, frame_idx)
 
 
+def _bg_upload_session(sess):
+    if not s3_storage.enabled:
+        return
+    import concurrent.futures
+    items = []
+    
+    # Meta / Manifest
+    for path in [sess.meta_path, sess.summary_path, sess.manifest_jsonl]:
+        if path.exists():
+            items.append((path, f"recordings/{sess.session_id}/{path.name}"))
+            
+    # Frames
+    if sess.frames_dir.exists():
+        for fpath in sess.frames_dir.glob("*.jpg"):
+            items.append((fpath, f"recordings/{sess.session_id}/frames/{fpath.name}"))
+            
+    logger.info("Upload background S3 dimulai: %d file untuk sesi %s", len(items), sess.session_id)
+    n_up = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
+        futures = [ex.submit(s3_storage.upload_file, p, o) for p, o in items]
+        for future in concurrent.futures.as_completed(futures):
+            if future.result():
+                n_up += 1
+    logger.info("Upload background S3 selesai. %d/%d file diunggah.", n_up, len(items))
+
+
 @app.post("/recordings/{session_id}/stop", response_model=StopRecordingResponse, dependencies=[Depends(check_api_key), Depends(rate_limit)])
-def stop_recording(session_id: str):
+def stop_recording(session_id: str, bg_tasks: BackgroundTasks):
     try:
         sess = recordings.RecordingSession.open(session_id)
     except recordings.SessionNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     summary = sess.finalize()
-    logger.info("Recording selesai: %s (%d frame)", session_id, summary["n_frames"])
+    
+    bg_tasks.add_task(_bg_upload_session, sess)
+    
+    logger.info("Recording selesai: %s (%d frame). Dijadwalkan ke S3.", session_id, summary["n_frames"])
     return StopRecordingResponse(
         session_id=session_id, n_frames=summary["n_frames"], fps_estimate=summary["fps_estimate"]
     )

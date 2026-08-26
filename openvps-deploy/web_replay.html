@@ -395,8 +395,15 @@
       transition: all 0.15s;
     }
 
-    .provider-action-btn:hover { border-color: var(--accent); color: var(--accent2); }
-    .provider-action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+    .provider-action-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+
+    .provider-action-btn.danger:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
 
     .multiset-fields {
       display: flex;
@@ -533,10 +540,7 @@
       <select class="provider-select" id="serverPreset" onchange="applyPreset()" style="width:170px;"></select>
       <button class="provider-action-btn" onclick="addPreset()" title="Tambah server baru">＋ Tambah</button>
       <button class="provider-action-btn danger" onclick="removePreset()" title="Hapus server ini">✕</button>
-      <div class="multiset-fields" id="multisetFields" style="display:none;">
-        <input type="text" id="multisetClientId" placeholder="Client ID" style="width:150px;">
-        <input type="password" id="multisetClientSecret" placeholder="Client Secret" style="width:160px;">
-      </div>
+      <!-- Multiset credentials handled server-side via ENV -->
       <span id="providerBadge" style="font-size:0.72rem; color:var(--text3); margin-left:4px;"></span>
     </div>
 
@@ -655,7 +659,7 @@
     // ============================================================
     const DEFAULT_PRESETS = [
       { label: '🖥️ Localhost', url: 'http://localhost:8000', apiKey: '', type: 'openvps' },
-      { label: '☁️ Multiset',  url: 'https://api.multiset.ai', apiKey: '', type: 'multiset' },
+      { label: '☁️ Multiset', url: 'https://api.multiset.ai', apiKey: '', type: 'multiset' },
     ];
     const STORAGE_KEY = 'openvps_server_presets';
 
@@ -682,7 +686,6 @@
       serverUrlInput.value = p.url;
       apiKeyInput.value = p.apiKey || '';
       const isMultiset = p.type === 'multiset';
-      document.getElementById('multisetFields').style.display = isMultiset ? 'flex' : 'none';
       document.getElementById('providerBadge').textContent = `→ ${p.url}`;
     }
 
@@ -860,6 +863,18 @@
       preload(idx + 1, 5);
     }
 
+    const labelColors = [
+      '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#10b981',
+      '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6',
+      '#d946ef', '#ec4899', '#f43f5e'
+    ];
+    function getLabelColor(label) {
+      if (!label) return '#22d3ee';
+      let hash = 0;
+      for (let i = 0; i < label.length; i++) hash = label.charCodeAt(i) + ((hash << 5) - hash);
+      return labelColors[Math.abs(hash) % labelColors.length];
+    }
+
     function drawDetections(dets) {
       // Crosshair di tengah
       const cx = stageCanvas.width / 2, cy = stageCanvas.height / 2;
@@ -875,7 +890,8 @@
         ctx.fillStyle = 'rgba(22, 25, 34, 0.75)';
         ctx.fillRect(8, 42, 220, dets.length * 22 + 10);
         dets.forEach((d, i) => {
-          ctx.fillStyle = '#10b981';
+          const color = getLabelColor(d.label);
+          ctx.fillStyle = color;
           ctx.font = '13px monospace';
           const conf = d.confidence ? (d.confidence * 100).toFixed(0) : '?';
           ctx.fillText(`[HIT] ${d.label.padEnd(10).substring(0, 10)} ${conf}%`, 16, 58 + i * 22);
@@ -886,23 +902,20 @@
         const bbox = d.bbox || d.box;
         if (!bbox || bbox.length < 4) return;
         const [x1, y1, x2, y2] = bbox;
-        ctx.strokeStyle = '#22d3ee';
+        const color = getLabelColor(d.label);
+        ctx.strokeStyle = color;
         ctx.lineWidth = Math.max(2, stageCanvas.width / 500);
 
-        // Tactical bracket corners
-        const L = 16;
+        // Tactical Full Box
         ctx.beginPath();
-        ctx.moveTo(x1, y1 + L); ctx.lineTo(x1, y1); ctx.lineTo(x1 + L, y1);
-        ctx.moveTo(x2 - L, y1); ctx.lineTo(x2, y1); ctx.lineTo(x2, y1 + L);
-        ctx.moveTo(x2, y2 - L); ctx.lineTo(x2, y2); ctx.lineTo(x2 - L, y2);
-        ctx.moveTo(x1 + L, y2); ctx.lineTo(x1, y2); ctx.lineTo(x1, y2 - L);
+        ctx.rect(x1, y1, x2 - x1, y2 - y1);
         ctx.stroke();
 
         // Label
         const conf = d.confidence ?? d.conf ?? 0;
         const label = `${d.label} ${(conf * 100).toFixed(0)}%`;
         ctx.font = `bold ${Math.max(12, stageCanvas.width / 60)}px monospace`;
-        ctx.fillStyle = '#22d3ee';
+        ctx.fillStyle = color;
         ctx.fillText(label, x1 + 4, Math.max(14, y1 - 6));
       });
     }
@@ -911,7 +924,8 @@
       detPanel.style.display = 'block';
       detChips.innerHTML = dets.map(d => {
         const conf = d.confidence ?? d.conf ?? 0;
-        return `<span class="det-chip">${d.label} ${(conf * 100).toFixed(0)}%</span>`;
+        const color = getLabelColor(d.label);
+        return `<span class="det-chip" style="background:${color}22;color:${color};border:1px solid ${color}44;">${d.label} ${(conf * 100).toFixed(0)}%</span>`;
       }).join('');
     }
 
