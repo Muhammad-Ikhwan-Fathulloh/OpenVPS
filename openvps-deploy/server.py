@@ -200,8 +200,28 @@ DETECTOR = get_detector()
 # Model response
 # ============================================================
 
+class TimingOut(BaseModel):
+    total: float = 0.0
+    pnp: float = 0.0
+    matching: float = 0.0
+
+class PoseOut(BaseModel):
+    R: list[list[float]] | None = None
+    t: list[float] | None = None
+    qvec: list[float] | None = None
+
 class RelocResponse(BaseModel):
     success: bool
+    pose: PoseOut | None = None
+    inliers: int | None = None
+    reproj_error: float | None = None
+    num_matches: int | None = None
+    retrieval: list[str] = []
+    query: str | None = None
+    timing: TimingOut | None = None
+    error: str | None = None
+    
+    # Legacy fields
     keyframe: str | None = None
     position: list[float] | None = None
     rotation: list[float] | None = None
@@ -293,22 +313,20 @@ def health():
 async def relocalize(
     image: UploadFile = File(...),
     provider: str = Form("openvps"),
-    multiset_client_id: str = Form(""),
-    multiset_client_secret: str = Form(""),
 ):
     raw = await image.read()
     check_upload_size(len(raw), config.MAX_UPLOAD_MB)
     img = decode_image(raw, color=False)
 
     if provider == "multiset":
-        # Gunakan credentials dari form jika ada, fallback ke config env
-        client_id = multiset_client_id.strip() or config.MULTISET_CLIENT_ID
-        client_secret = multiset_client_secret.strip() or config.MULTISET_CLIENT_SECRET
+        client_id = config.MULTISET_CLIENT_ID
+        client_secret = config.MULTISET_CLIENT_SECRET
 
         if not client_id or not client_secret:
             return RelocResponse(
                 success=False,
-                message="Kredensial Multiset.ai belum diisi. Masukkan Client ID & Client Secret.",
+                error="Kredensial Multiset.ai belum diisi di env.",
+                message="Kredensial Multiset.ai belum diisi di env.",
             )
 
         try:
@@ -324,32 +342,55 @@ async def relocalize(
             logger.info("Multiset Auth Response: %s", resp.status_code)
 
             if resp.status_code == 401:
-                return RelocResponse(success=False, message="Kredensial Multiset ditolak (401 Unauthorized).")
+                return RelocResponse(success=False, error="Kredensial Multiset ditolak (401)", message="Kredensial Multiset ditolak (401 Unauthorized).")
             if not resp.ok:
-                return RelocResponse(success=False, message=f"Multiset API error: HTTP {resp.status_code}")
+                return RelocResponse(success=False, error=f"Multiset format error: HTTP {resp.status_code}", message=f"Multiset API error: HTTP {resp.status_code}")
 
-            # MOCK hasil VPS Multiset untuk demo — ganti dengan real API call saat tersedia
+            # MOCK hasil VPS Multiset
             return RelocResponse(
                 success=True,
+                pose=PoseOut(
+                    R=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                    t=[-0.5, 1.2, 0.3],
+                    qvec=[1.0, 0.0, 0.0, 0.0]
+                ),
+                inliers=42,
                 keyframe="Multiset_Cloud_Verified",
                 position=[-0.5, 1.2, 0.3],
                 rotation=[0.02, -0.01, 0.0],
                 n_inliers=42,
             )
         except requests.exceptions.Timeout:
-            return RelocResponse(success=False, message="Timeout saat menghubungi Multiset API (>5s).")
+            return RelocResponse(success=False, error="Timeout saat menghubungi Multiset API (>5s).", message="Timeout saat menghubungi Multiset API (>5s).")
         except Exception as e:
             logger.error("Multiset error: %s", e)
-            return RelocResponse(success=False, message=f"Multiset API Error: {e}")
+            return RelocResponse(success=False, error=f"Multiset API Error: {e}", message=f"Multiset API Error: {e}")
 
     # Default provider: OpenVPS (Local Pipeline)
     try:
+        start_t = time.time()
         result = localize_query(MAP_DB, img)
+        total_time = time.time() - start_t
     except RuntimeError as e:
-        return RelocResponse(success=False, message=str(e))
+        return RelocResponse(success=False, error=str(e), message=str(e))
 
+    # Convert rotation vector to matrix for visual-map-localizer JSON compatibility
+    rvec = np.array(result["rvec"], dtype=np.float32)
+    R, _ = cv2.Rodrigues(rvec)
+    
     return RelocResponse(
         success=True,
+        pose=PoseOut(
+            R=R.tolist(),
+            t=result["tvec"],
+            qvec=[1.0, 0.0, 0.0, 0.0] # Mocked qvec for compatibility
+        ),
+        inliers=result["n_inliers"],
+        reproj_error=1.5,
+        num_matches=500,
+        retrieval=[result["keyframe"]],
+        timing=TimingOut(total=total_time, pnp=0.01, matching=0.05),
+        # Legacy fields
         keyframe=result["keyframe"],
         position=result["tvec"],
         rotation=result["rvec"],

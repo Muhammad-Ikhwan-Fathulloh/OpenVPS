@@ -127,8 +127,10 @@
     /* ===== VPS VISUAL OVERLAY ===== */
     .vps-hud-canvas {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
       z-index: 15;
     }
@@ -165,9 +167,21 @@
       border-radius: 3px;
       padding: 1px 0;
     }
-    .vps-axis.x { background: rgba(239,68,68,.2); color: #f87171; }
-    .vps-axis.y { background: rgba(34,197,94,.2); color: #4ade80; }
-    .vps-axis.z { background: rgba(59,130,246,.2); color: #60a5fa; }
+
+    .vps-axis.x {
+      background: rgba(239, 68, 68, .2);
+      color: #f87171;
+    }
+
+    .vps-axis.y {
+      background: rgba(34, 197, 94, .2);
+      color: #4ade80;
+    }
+
+    .vps-axis.z {
+      background: rgba(59, 130, 246, .2);
+      color: #60a5fa;
+    }
 
     .vps-bar-wrap {
       flex: 1;
@@ -176,14 +190,24 @@
       border-radius: 4px;
       overflow: hidden;
     }
+
     .vps-bar-fill {
       height: 100%;
       border-radius: 4px;
       transition: width 0.3s ease;
     }
-    .vps-axis.x ~ .vps-bar-wrap .vps-bar-fill { background: #f87171; }
-    .vps-axis.y ~ .vps-bar-wrap .vps-bar-fill { background: #4ade80; }
-    .vps-axis.z ~ .vps-bar-wrap .vps-bar-fill { background: #60a5fa; }
+
+    .vps-axis.x~.vps-bar-wrap .vps-bar-fill {
+      background: #f87171;
+    }
+
+    .vps-axis.y~.vps-bar-wrap .vps-bar-fill {
+      background: #4ade80;
+    }
+
+    .vps-axis.z~.vps-bar-wrap .vps-bar-fill {
+      background: #60a5fa;
+    }
 
     .vps-val {
       font-size: 0.72rem;
@@ -206,6 +230,7 @@
       overflow: hidden;
       margin-top: 4px;
     }
+
     .vps-inlier-fill {
       height: 100%;
       background: linear-gradient(90deg, #06b6d4, #22d3ee);
@@ -221,26 +246,24 @@
     style="background-color: #11141c !important;">
     <span class="navbar-brand mb-0 h1 text-info fw-bold">📷 OpenVPS Dashboard</span>
     <div class="d-flex w-auto gap-3 align-items-center flex-wrap">
-      <a href="/replay" class="btn btn-sm btn-outline-info text-info fw-bold" style="text-decoration:none;">🎬 Replay</a>
+      <a href="/replay" class="btn btn-sm btn-outline-info text-info fw-bold" style="text-decoration:none;">🎬
+        Replay</a>
 
       <!-- Provider Toggle -->
-      <div class="d-flex align-items-center gap-2 border border-secondary rounded px-2 py-1" style="background:#1a1e28; flex-shrink:0;">
-        <small class="text-secondary fw-bold text-uppercase" style="font-size:0.65rem; letter-spacing:.5px; white-space:nowrap;">Server</small>
-        <select id="serverPreset" class="form-select form-select-sm bg-dark text-light border-secondary" style="width:160px; font-size:0.75rem;" onchange="applyPreset()">
+      <div class="d-flex align-items-center gap-2 border border-secondary rounded px-2 py-1"
+        style="background:#1a1e28; flex-shrink:0;">
+        <small class="text-secondary fw-bold text-uppercase"
+          style="font-size:0.65rem; letter-spacing:.5px; white-space:nowrap;">Server</small>
+        <select id="serverPreset" class="form-select form-select-sm bg-dark text-light border-secondary"
+          style="width:160px; font-size:0.75rem;" onchange="applyPreset()">
         </select>
-        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem; padding:3px 8px; white-space:nowrap;" onclick="addPreset()" title="Tambah server baru">＋</button>
-        <button class="btn btn-sm btn-outline-danger" style="font-size:0.72rem; padding:3px 8px;" onclick="removePreset()" title="Hapus server ini">✕</button>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem; padding:3px 8px; white-space:nowrap;"
+          onclick="addPreset()" title="Tambah server baru">＋</button>
+        <button class="btn btn-sm btn-outline-danger" style="font-size:0.72rem; padding:3px 8px;"
+          onclick="removePreset()" title="Hapus server ini">✕</button>
       </div>
 
-      <!-- Multiset credentials (shown when multiset preset selected) -->
-      <div id="multisetCredsNav" style="display:none;" class="d-flex gap-2">
-        <input type="text" id="multisetClientId"
-          class="form-control form-control-sm bg-dark text-light border-secondary"
-          style="width:130px;" placeholder="Client ID">
-        <input type="password" id="multisetClientSecret"
-          class="form-control form-control-sm bg-dark text-light border-secondary"
-          style="width:140px;" placeholder="Client Secret">
-      </div>
+      <!-- Multiset credentials are now securely read from environment variables -->
 
       <input type="text" id="serverUrl" class="form-control form-control-sm bg-dark text-light border-secondary"
         value="http://localhost:8000" style="width: 200px;" placeholder="Server URL">
@@ -340,8 +363,10 @@
                     <canvas id="compassCanvas" width="110" height="110"></canvas>
                   </div>
                   <div class="text-center mb-2">
-                    <span id="vpsBadgeProvider" class="badge bg-dark border border-secondary" style="font-size:0.7rem;"></span>
-                    <span id="vpsBadgeKeyframe" class="badge bg-dark border border-secondary ms-1" style="font-size:0.7rem; color:#22d3ee;"></span>
+                    <span id="vpsBadgeProvider" class="badge bg-dark border border-secondary"
+                      style="font-size:0.7rem;"></span>
+                    <span id="vpsBadgeKeyframe" class="badge bg-dark border border-secondary ms-1"
+                      style="font-size:0.7rem; color:#22d3ee;"></span>
                   </div>
 
                   <!-- Position X Y Z bars -->
@@ -349,17 +374,23 @@
                     <div class="vps-title">📌 Posisi (meter)</div>
                     <div class="vps-coord-row">
                       <span class="vps-axis x">X</span>
-                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barPX" style="width:50%;background:#f87171;"></div></div>
+                      <div class="vps-bar-wrap">
+                        <div class="vps-bar-fill" id="barPX" style="width:50%;background:#f87171;"></div>
+                      </div>
                       <span class="vps-val" id="valPX">0.000</span>
                     </div>
                     <div class="vps-coord-row">
                       <span class="vps-axis y">Y</span>
-                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barPY" style="width:50%;background:#4ade80;"></div></div>
+                      <div class="vps-bar-wrap">
+                        <div class="vps-bar-fill" id="barPY" style="width:50%;background:#4ade80;"></div>
+                      </div>
                       <span class="vps-val" id="valPY">0.000</span>
                     </div>
                     <div class="vps-coord-row">
                       <span class="vps-axis z">Z</span>
-                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barPZ" style="width:50%;background:#60a5fa;"></div></div>
+                      <div class="vps-bar-wrap">
+                        <div class="vps-bar-fill" id="barPZ" style="width:50%;background:#60a5fa;"></div>
+                      </div>
                       <span class="vps-val" id="valPZ">0.000</span>
                     </div>
                   </div>
@@ -369,17 +400,23 @@
                     <div class="vps-title">🔄 Rotasi (rad)</div>
                     <div class="vps-coord-row">
                       <span class="vps-axis x">R</span>
-                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barRR" style="width:50%;background:#f87171;"></div></div>
+                      <div class="vps-bar-wrap">
+                        <div class="vps-bar-fill" id="barRR" style="width:50%;background:#f87171;"></div>
+                      </div>
                       <span class="vps-val" id="valRR">0.000</span>
                     </div>
                     <div class="vps-coord-row">
                       <span class="vps-axis y">P</span>
-                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barRP" style="width:50%;background:#4ade80;"></div></div>
+                      <div class="vps-bar-wrap">
+                        <div class="vps-bar-fill" id="barRP" style="width:50%;background:#4ade80;"></div>
+                      </div>
                       <span class="vps-val" id="valRP">0.000</span>
                     </div>
                     <div class="vps-coord-row">
                       <span class="vps-axis z">Y</span>
-                      <div class="vps-bar-wrap"><div class="vps-bar-fill" id="barRY" style="width:50%;background:#60a5fa;"></div></div>
+                      <div class="vps-bar-wrap">
+                        <div class="vps-bar-fill" id="barRY" style="width:50%;background:#60a5fa;"></div>
+                      </div>
                       <span class="vps-val" id="valRY">0.000</span>
                     </div>
                   </div>
@@ -457,7 +494,6 @@
       document.getElementById('serverUrl').value = p.url;
       document.getElementById('apiKey').value = p.apiKey || '';
       const isMultiset = p.type === 'multiset';
-      document.getElementById('multisetCredsNav').style.display = isMultiset ? 'flex' : 'none';
       currentProvider = isMultiset ? 'multiset' : 'openvps';
       logSys(`🔌 Server: <b>${p.label}</b> — ${p.url}`);
     }
@@ -784,8 +820,8 @@
     function drawAxisArrows(ctx, cx, cy, len, roll, pitch, yaw) {
       // Simple 2D projection of 3D axes
       const axes = [
-        { label: 'X', color: '#f87171', dx: Math.cos(yaw),       dy: -Math.sin(pitch) },
-        { label: 'Y', color: '#4ade80', dx: Math.sin(yaw),       dy:  Math.cos(pitch) },
+        { label: 'X', color: '#f87171', dx: Math.cos(yaw), dy: -Math.sin(pitch) },
+        { label: 'Y', color: '#4ade80', dx: Math.sin(yaw), dy: Math.cos(pitch) },
         { label: 'Z', color: '#60a5fa', dx: Math.sin(roll) * 0.4, dy: -Math.cos(roll) },
       ];
       // Background circle
@@ -873,12 +909,7 @@
         const fd = new FormData();
         fd.append('image', blob, 't.jpg');
         fd.append('provider', currentProvider);
-        if (currentProvider === 'multiset') {
-          const cid = document.getElementById('multisetClientId').value.trim();
-          const csec = document.getElementById('multisetClientSecret').value.trim();
-          if (cid) fd.append('multiset_client_id', cid);
-          if (csec) fd.append('multiset_client_secret', csec);
-        }
+        // Multiset credentials handled server-side via ENV variables
         try {
           const r = await fetch(`${getUrl()}/relocalize`, { method: 'POST', headers: getHeaders(), body: fd });
           const d = await r.json();
