@@ -626,6 +626,31 @@
 
   <script>
     // ============================================================
+    // DOM — dideklarasikan DULU sebelum applyPreset dipanggil
+    // ============================================================
+    const serverUrlInput = document.getElementById('serverUrl');
+    const apiKeyInput = document.getElementById('apiKey');
+    const sessionIdInput = document.getElementById('sessionId');
+    const statusToast = document.getElementById('statusToast');
+    const sessionPanel = document.getElementById('sessionPanel');
+    const sessionList = document.getElementById('sessionList');
+    const arStage = document.getElementById('arStage');
+    const stageCanvas = document.getElementById('stageCanvas');
+    const scrubber = document.getElementById('scrubber');
+    const playBtn = document.getElementById('playBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const frameLabel = document.getElementById('frameLabel');
+    const speedSelect = document.getElementById('speedSelect');
+    const hudFrame = document.getElementById('hudFrame');
+    const hudObjects = document.getElementById('hudObjects');
+    const hudSpeed = document.getElementById('hudSpeed');
+    const swipeHint = document.getElementById('swipeHint');
+    const detPanel = document.getElementById('detPanel');
+    const detChips = document.getElementById('detChips');
+    const ctx = stageCanvas.getContext('2d');
+
+    // ============================================================
     // SERVER PRESETS (shared localStorage dengan web_capture)
     // ============================================================
     const DEFAULT_PRESETS = [
@@ -692,31 +717,6 @@
     // Init
     renderPresetDropdown();
     applyPreset();
-
-    // ============================================================
-    // DOM
-    // ============================================================
-    const serverUrlInput = document.getElementById('serverUrl');
-    const apiKeyInput = document.getElementById('apiKey');
-    const sessionIdInput = document.getElementById('sessionId');
-    const statusToast = document.getElementById('statusToast');
-    const sessionPanel = document.getElementById('sessionPanel');
-    const sessionList = document.getElementById('sessionList');
-    const arStage = document.getElementById('arStage');
-    const stageCanvas = document.getElementById('stageCanvas');
-    const scrubber = document.getElementById('scrubber');
-    const playBtn = document.getElementById('playBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const frameLabel = document.getElementById('frameLabel');
-    const speedSelect = document.getElementById('speedSelect');
-    const hudFrame = document.getElementById('hudFrame');
-    const hudObjects = document.getElementById('hudObjects');
-    const hudSpeed = document.getElementById('hudSpeed');
-    const swipeHint = document.getElementById('swipeHint');
-    const detPanel = document.getElementById('detPanel');
-    const detChips = document.getElementById('detChips');
-    const ctx = stageCanvas.getContext('2d');
 
     let manifest = null;
     let frameCache = new Map();
@@ -883,7 +883,9 @@
       }
 
       dets.forEach(d => {
-        const [x1, y1, x2, y2] = d.bbox;
+        const bbox = d.bbox || d.box;
+        if (!bbox || bbox.length < 4) return;
+        const [x1, y1, x2, y2] = bbox;
         ctx.strokeStyle = '#22d3ee';
         ctx.lineWidth = Math.max(2, stageCanvas.width / 500);
 
@@ -897,7 +899,8 @@
         ctx.stroke();
 
         // Label
-        const label = `${d.label} ${(d.confidence * 100).toFixed(0)}%`;
+        const conf = d.confidence ?? d.conf ?? 0;
+        const label = `${d.label} ${(conf * 100).toFixed(0)}%`;
         ctx.font = `bold ${Math.max(12, stageCanvas.width / 60)}px monospace`;
         ctx.fillStyle = '#22d3ee';
         ctx.fillText(label, x1 + 4, Math.max(14, y1 - 6));
@@ -906,9 +909,10 @@
 
     function renderDetChips(dets) {
       detPanel.style.display = 'block';
-      detChips.innerHTML = dets.map(d =>
-        `<span class="det-chip">${d.label} ${(d.confidence * 100).toFixed(0)}%</span>`
-      ).join('');
+      detChips.innerHTML = dets.map(d => {
+        const conf = d.confidence ?? d.conf ?? 0;
+        return `<span class="det-chip">${d.label} ${(conf * 100).toFixed(0)}%</span>`;
+      }).join('');
     }
 
     // ============================================================
