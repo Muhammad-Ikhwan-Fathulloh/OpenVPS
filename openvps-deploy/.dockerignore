@@ -1,6 +1,7 @@
 # Version control
 .git
 .gitignore
+.github
 
 # Secrets (jangan pernah masuk image)
 .env

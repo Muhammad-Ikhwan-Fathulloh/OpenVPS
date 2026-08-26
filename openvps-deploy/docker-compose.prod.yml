@@ -1,0 +1,61 @@
+# ============================================================
+#  OpenVPS — docker-compose PRODUCTION (pull dari Docker Hub)
+#  Taruh file ini di VPS, BUKAN di-build di VPS.
+#  Image sudah di-build di GitHub Actions & push ke Docker Hub.
+#
+#  Setup awal di VPS:
+#    1. Copy file ini + .env ke VPS
+#    2. Isi .env (minimal OPENVPS_API_KEY)
+#    3. docker compose -f docker-compose.prod.yml up -d
+#
+#  Setelah itu deploy otomatis via GitHub Actions setiap push ke main.
+# ============================================================
+
+services:
+  openvps-app:
+    # Pull dari Docker Hub, tidak ada 'build:' di sini
+    image: ${DOCKERHUB_USERNAME}/openvps-server:latest
+    container_name: openvps-app
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      TZ: Asia/Jakarta
+      PYTHONUNBUFFERED: "1"
+
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    volumes:
+      - ./recordings:/app/recordings:rw
+      - ./collected_photos:/app/collected_photos:rw
+      - ./uploads:/app/uploads:rw
+      - openvps_model_cache:/home/openvps/.cache:rw
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+        reservations:
+          memory: 1G
+          cpus: "0.5"
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  openvps_model_cache:
+    driver: local
