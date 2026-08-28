@@ -8,6 +8,8 @@
 
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Three.js for 3D VPS Visualizer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
   <style>
     body {
@@ -52,6 +54,77 @@
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid #232839;
+    }
+
+    .visualizer-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #08090d 0%, #0e1218 100%);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #232839;
+    }
+
+    .visualizer-container #three-viewport {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .split-visual-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 991px) {
+      .split-visual-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .viz-label {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      background: rgba(15, 18, 25, 0.85);
+      color: #22d3ee;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      z-index: 5;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      border: 1px solid rgba(34, 211, 238, 0.25);
+    }
+
+    .viz-stats {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      z-index: 5;
+    }
+
+    .viz-stat {
+      background: rgba(15, 18, 25, 0.85);
+      color: #94a3b8;
+      font-size: 0.62rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid #1e2536;
+    }
+
+    .viz-stat span {
+      color: #22d3ee;
+      font-weight: 700;
     }
 
     .canvas-container video,
@@ -303,16 +376,38 @@
           <div class="col-lg-8">
             <div class="card h-100">
               <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Kamera Utama</span>
+                <span>📹 Kamera & VPS Visualizer</span>
                 <span id="camStatus" class="badge bg-secondary">Mati</span>
               </div>
               <div class="card-body">
-                <div class="canvas-container mb-3">
-                  <video id="videoElement" autoplay playsinline muted></video>
-                  <canvas id="overlayCanvas" class="hud-overlay"></canvas>
-                  <canvas id="vpsHudCanvas" class="vps-hud-canvas"></canvas>
-                  <div class="status-badge" id="recIndicator" style="display:none; color: #ef4444;">⏺ REC: <span
-                      id="recFrameCount">0</span> frame</div>
+
+                <!-- Split Screen: Video Kamera (kiri) + 3D VPS Visualizer (kanan) -->
+                <div class="split-visual-row">
+                  <!-- LEFT: Video Camera -->
+                  <div class="canvas-container">
+                    <span class="viz-label">🎥 CAMERA</span>
+                    <video id="videoElement" autoplay playsinline muted></video>
+                    <canvas id="overlayCanvas" class="hud-overlay"></canvas>
+                    <canvas id="vpsHudCanvas" class="vps-hud-canvas"></canvas>
+                    <div class="status-badge" id="recIndicator" style="display:none; color: #ef4444;">⏺ REC: <span
+                        id="recFrameCount">0</span> frame</div>
+                    <div class="viz-stats">
+                      <div class="viz-stat">FPS: <span id="camFpsStat">0</span></div>
+                      <div class="viz-stat">DET: <span id="detStat" style="color:#64748b;">OFF</span></div>
+                    </div>
+                  </div>
+
+                  <!-- RIGHT: 3D VPS Visualizer -->
+                  <div class="visualizer-container">
+                    <span class="viz-label">📍 VPS 3D MAP</span>
+                    <canvas id="three-viewport"></canvas>
+                    <div class="viz-stats">
+                      <div class="viz-stat">X: <span id="vizX">0.00</span></div>
+                      <div class="viz-stat">Y: <span id="vizY">0.00</span></div>
+                      <div class="viz-stat">Z: <span id="vizZ">0.00</span></div>
+                      <div class="viz-stat">Inliers: <span id="vizInliers">0</span></div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap">
@@ -328,6 +423,10 @@
                     <div class="form-check form-switch fs-5">
                       <input class="form-check-input" type="checkbox" role="switch" id="toggleDetect" disabled>
                       <label class="form-check-label fs-6 ms-1" for="toggleDetect">Live Detect YOLO</label>
+                    </div>
+                    <div class="form-check form-switch fs-5">
+                      <input class="form-check-input" type="checkbox" role="switch" id="toggleLiveVPS" disabled>
+                      <label class="form-check-label fs-6 ms-1 text-info fw-bold" for="toggleLiveVPS">🟢 Live VPS Real-time</label>
                     </div>
                     <div class="form-check form-switch fs-5">
                       <input class="form-check-input" type="checkbox" role="switch" id="toggleRecord" disabled>
@@ -623,6 +722,7 @@
     const overlayCanvas = document.getElementById('overlayCanvas');
     const toggleDet = document.getElementById('toggleDetect');
     const toggleRec = document.getElementById('toggleRecord');
+    const toggleLiveVPS = document.getElementById('toggleLiveVPS');
 
     document.getElementById('startCamBtn').onclick = async () => {
       if (cameraActive) {
@@ -632,7 +732,11 @@
         document.getElementById('startCamBtn').className = 'btn btn-primary';
         document.getElementById('camStatus').textContent = 'Mati';
         document.getElementById('camStatus').className = 'badge bg-secondary';
-        ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord'].forEach(id => document.getElementById(id).disabled = true);
+        // Matikan toggle-toggle yang tergantung kamera
+        if (toggleDet.checked) toggleDet.checked = false;
+        if (toggleRec.checked) toggleRec.checked = false;
+        if (toggleLiveVPS.checked) toggleLiveVPS.checked = false;
+        ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord', 'toggleLiveVPS'].forEach(id => document.getElementById(id).disabled = true);
         return;
       }
       try {
@@ -642,7 +746,7 @@
         document.getElementById('startCamBtn').className = 'btn btn-danger';
         document.getElementById('camStatus').textContent = 'LIVE';
         document.getElementById('camStatus').className = 'badge bg-success';
-        ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord'].forEach(id => document.getElementById(id).disabled = false);
+        ['captureBtn', 'flipCamBtn', 'testLocBtn', 'toggleDetect', 'toggleRecord', 'toggleLiveVPS'].forEach(id => document.getElementById(id).disabled = false);
         video.onloadedmetadata = () => {
           overlayCanvas.width = video.videoWidth;
           overlayCanvas.height = video.videoHeight;
@@ -916,7 +1020,321 @@
 
       // HUD overlay on video
       drawVpsHud(pos, rot);
+
+      // ==== NEW: Update 3D Visualizer & Stats ====
+      update3DVisualizer(pos, rot);
+      updateVizStats(pos, inliers);
     }
+
+    // ============================================================
+    // ===== 3D VPS VISUALIZER (Three.js) =====
+    // ============================================================
+    let vizScene, vizCamera, vizRenderer;
+    let vizCameraFrustum, vizTrailLine, vizTrailPoints = [];
+    let vizKeyframes = [];
+    let vizGridHelper, vizAxesHelper;
+    let TRAIL_MAX_POINTS = 200;
+
+    function init3DVisualizer() {
+      const canvasEl = document.getElementById('three-viewport');
+      const container = canvasEl.parentElement;
+      const W = container.clientWidth;
+      const H = container.clientHeight;
+
+      vizScene = new THREE.Scene();
+      vizScene.background = new THREE.Color(0x08090d);
+      vizScene.fog = new THREE.Fog(0x08090d, 20, 60);
+
+      vizCamera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+      vizCamera.position.set(8, 10, 12);
+      vizCamera.lookAt(0, 0, 0);
+
+      vizRenderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: false });
+      vizRenderer.setPixelRatio(window.devicePixelRatio);
+      vizRenderer.setSize(W, H);
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0x404060, 0.6);
+      vizScene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0x06b6d4, 0.8);
+      dirLight.position.set(10, 20, 10);
+      vizScene.add(dirLight);
+      const fillLight = new THREE.PointLight(0xa78bfa, 0.4, 50);
+      fillLight.position.set(-10, 5, -10);
+      vizScene.add(fillLight);
+
+      // Grid floor
+      vizGridHelper = new THREE.GridHelper(30, 30, 0x1e3a5f, 0x141f2e);
+      vizScene.add(vizGridHelper);
+
+      // Origin axes (XYZ=RGB)
+      vizAxesHelper = new THREE.AxesHelper(3);
+      vizScene.add(vizAxesHelper);
+
+      // Origin sphere
+      const originGeom = new THREE.SphereGeometry(0.15, 16, 16);
+      const originMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+      vizScene.add(new THREE.Mesh(originGeom, originMat));
+
+      // Demo keyframes (3 keyframes sesuai demo map: room_0, room_1, room_2)
+      const kfPositions = [
+        { name: 'room_0', pos: [0, 0, 0], color: 0x22d3ee },
+        { name: 'room_1', pos: [0, 0.1, 0], color: 0xa78bfa },
+        { name: 'room_2', pos: [0, -0.2, 0], color: 0xf472b6 },
+      ];
+      kfPositions.forEach(kf => addKeyframe(kf.name, kf.pos, kf.color));
+
+      // Camera frustum (representasi kamera user real-time)
+      const frustumGeom = new THREE.ConeGeometry(0.4, 0.8, 4);
+      frustumGeom.rotateX(-Math.PI / 2);
+      const frustumMat = new THREE.MeshPhongMaterial({
+        color: 0x22d3ee,
+        emissive: 0x06b6d4,
+        emissiveIntensity: 0.4,
+        transparent: true,
+        opacity: 0.9,
+        flatShading: true,
+      });
+      vizCameraFrustum = new THREE.Mesh(frustumGeom, frustumMat);
+      vizScene.add(vizCameraFrustum);
+
+      // Direction line from frustum
+      const dirArrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, 0, 0),
+        1.5,
+        0x22d3ee,
+        0.2,
+        0.12
+      );
+      vizCameraFrustum.add(dirArrow);
+
+      // Trail line (jejak pergerakan)
+      const trailGeom = new THREE.BufferGeometry();
+      const trailMat = new THREE.LineBasicMaterial({
+        color: 0x06b6d4,
+        transparent: true,
+        opacity: 0.7,
+      });
+      vizTrailLine = new THREE.Line(trailGeom, trailMat);
+      vizScene.add(vizTrailLine);
+
+      // Orbit-like manual rotation (auto-orbit for demo simplicity)
+      start3DRenderLoop();
+
+      // Resize handler
+      window.addEventListener('resize', () => {
+        const W2 = container.clientWidth;
+        const H2 = container.clientHeight;
+        vizCamera.aspect = W2 / H2;
+        vizCamera.updateProjectionMatrix();
+        vizRenderer.setSize(W2, H2);
+      });
+    }
+
+    function addKeyframe(name, pos, color) {
+      const group = new THREE.Group();
+      const ringGeom = new THREE.RingGeometry(0.3, 0.42, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.6,
+        side: THREE.DoubleSide,
+      });
+      const ring = new THREE.Mesh(ringGeom, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.02;
+      group.add(ring);
+
+      const pillarGeom = new THREE.CylinderGeometry(0.05, 0.05, 1.5, 8);
+      const pillarMat = new THREE.MeshPhongMaterial({ color: color, transparent: true, opacity: 0.5 });
+      const pillar = new THREE.Mesh(pillarGeom, pillarMat);
+      pillar.position.y = 0.75;
+      group.add(pillar);
+
+      const topGeom = new THREE.SphereGeometry(0.15, 16, 16);
+      const topMat = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.5 });
+      const top = new THREE.Mesh(topGeom, topMat);
+      top.position.y = 1.6;
+      group.add(top);
+
+      group.position.set(pos[0], pos[1], pos[2]);
+      group.userData = { name, basePos: [...pos] };
+      vizScene.add(group);
+      vizKeyframes.push(group);
+    }
+
+    let _vizTime = 0;
+    function start3DRenderLoop() {
+      const render = () => {
+        requestAnimationFrame(render);
+        _vizTime += 0.005;
+        // Gentle auto-orbit camera around origin
+        const radius = 15;
+        const height = 9 + Math.sin(_vizTime * 0.7) * 1.5;
+        vizCamera.position.x = Math.cos(_vizTime * 0.4) * radius;
+        vizCamera.position.z = Math.sin(_vizTime * 0.4) * radius;
+        vizCamera.position.y = height;
+        vizCamera.lookAt(0, 0.5, 0);
+
+        // Animate keyframes (floating pulse)
+        vizKeyframes.forEach((kf, i) => {
+          const bob = Math.sin(_vizTime * 2 + i) * 0.04;
+          kf.position.y = kf.userData.basePos[1] + bob;
+          kf.children[0].rotation.z += 0.008; // ring spin
+        });
+
+        // Subtle frustum pulse glow
+        if (vizCameraFrustum && vizCameraFrustum.material) {
+          vizCameraFrustum.material.emissiveIntensity = 0.3 + Math.sin(_vizTime * 3) * 0.15;
+        }
+
+        vizRenderer.render(vizScene, vizCamera);
+      };
+      render();
+    }
+
+    function update3DVisualizer(pos, rot) {
+      if (!vizCameraFrustum) return;
+      const [x, y, z] = pos;
+      const [roll, pitch, yaw] = rot;
+
+      // Position: tukar Y dan Z karena Three.js Y-up, OpenCV Z-forward
+      vizCameraFrustum.position.set(x, z, y);
+
+      // Rotation: apply yaw around Y, pitch around X, roll around Z
+      const euler = new THREE.Euler(-pitch, yaw, -roll, 'YXZ');
+      vizCameraFrustum.rotation.copy(euler);
+
+      // Tambahkan ke trail
+      const p = new THREE.Vector3(x, z, y);
+      if (vizTrailPoints.length === 0 || vizTrailPoints[vizTrailPoints.length - 1].distanceTo(p) > 0.05) {
+        vizTrailPoints.push(p);
+        if (vizTrailPoints.length > TRAIL_MAX_POINTS) vizTrailPoints.shift();
+        const positions = new Float32Array(vizTrailPoints.length * 3);
+        vizTrailPoints.forEach((pt, i) => {
+          positions[i * 3] = pt.x;
+          positions[i * 3 + 1] = pt.y;
+          positions[i * 3 + 2] = pt.z;
+        });
+        vizTrailLine.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        vizTrailLine.geometry.computeBoundingSphere();
+      }
+    }
+
+    function updateVizStats(pos, inliers) {
+      if (document.getElementById('vizX')) document.getElementById('vizX').textContent = pos[0].toFixed(2);
+      if (document.getElementById('vizY')) document.getElementById('vizY').textContent = pos[1].toFixed(2);
+      if (document.getElementById('vizZ')) document.getElementById('vizZ').textContent = pos[2].toFixed(2);
+      if (document.getElementById('vizInliers')) document.getElementById('vizInliers').textContent = inliers;
+    }
+
+    // Init visualizer — pakai requestIdleCallback atau fallback setTimeout
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(init3DVisualizer, 100));
+    } else {
+      setTimeout(init3DVisualizer, 100);
+    }
+
+    // ============================================================
+    // ===== LIVE VPS (WebSocket Real-time) =====
+    // ============================================================
+    let vpsWs = null, vpsTimer = null;
+    let lastVpsFrameTime = 0;
+    let vpsFpsCounter = { frames: 0, start: 0, last: 0 };
+
+    toggleLiveVPS.onchange = () => {
+      if (!toggleLiveVPS.checked) {
+        if (vpsWs) vpsWs.close();
+        if (vpsTimer) clearInterval(vpsTimer);
+        document.getElementById('vpsStatusBadge').textContent = '⏸ OFF';
+        document.getElementById('vpsStatusBadge').className = 'badge bg-secondary';
+        logSys('🟡 Live VPS dihentikan.');
+        return;
+      }
+      logSys('🔍 Menghubungkan Live VPS WebSocket...');
+      document.getElementById('vpsStatusBadge').textContent = '⏳ Menyambung';
+      document.getElementById('vpsStatusBadge').className = 'badge bg-warning text-dark';
+
+      vpsWs = new WebSocket(`${getWsUrl()}/ws/relocalize`);
+
+      vpsWs.onopen = () => {
+        logSys('🟢 Live VPS berjalan (real-time via WebSocket).');
+        document.getElementById('vpsStatusBadge').textContent = '🟢 LIVE VPS';
+        document.getElementById('vpsStatusBadge').className = 'badge bg-info text-dark';
+        vpsFpsCounter = { frames: 0, start: performance.now(), last: 0 };
+        vpsTimer = setInterval(() => {
+          if (vpsWs.readyState !== 1 || !cameraActive) return;
+          const now = performance.now();
+          if (now - lastVpsFrameTime < 350) return; // throttle ~2-3 fps untuk VPS (CPU friendly)
+          lastVpsFrameTime = now;
+          const c = document.createElement('canvas');
+          c.width = video.videoWidth; c.height = video.videoHeight;
+          c.getContext('2d').drawImage(video, 0, 0);
+          c.toBlob(b => {
+            if (vpsWs.readyState === 1 && b) vpsWs.send(b);
+          }, 'image/jpeg', 0.55);
+        }, 100);
+      };
+
+      vpsWs.onmessage = e => {
+        try {
+          const data = JSON.parse(e.data);
+          vpsFpsCounter.frames++;
+          const now = performance.now();
+          if (now - vpsFpsCounter.last >= 1000) {
+            const fps = (vpsFpsCounter.frames * 1000 / (now - vpsFpsCounter.start)).toFixed(1);
+            document.getElementById('vpsStatusBadge').textContent = `🟢 LIVE VPS ${fps}fps`;
+            vpsFpsCounter.last = now;
+          }
+          if (data.success) {
+            lastVpsResult = data;
+            updateVpsPanelUI(data);
+          } else if (data.error) {
+            document.getElementById('vpsError').style.display = 'block';
+            document.getElementById('vpsError').textContent = '⚠️ ' + data.error;
+          }
+        } catch (e) { }
+      };
+
+      vpsWs.onerror = () => {
+        logSys('❌ Live VPS WebSocket error.');
+        toggleLiveVPS.checked = false;
+      };
+      vpsWs.onclose = () => {
+        if (toggleLiveVPS.checked) toggleLiveVPS.checked = false;
+      };
+    };
+
+    // ============================================================
+    // ===== FPS COUNTER (Camera) =====
+    // ============================================================
+    let camFpsCounter = { frames: 0, lastUpdate: 0 };
+    function countCamFrame() {
+      camFpsCounter.frames++;
+      const now = performance.now();
+      if (now - camFpsCounter.lastUpdate >= 1000) {
+        document.getElementById('camFpsStat').textContent = camFpsCounter.frames;
+        camFpsCounter.frames = 0;
+        camFpsCounter.lastUpdate = now;
+      }
+    }
+    video.addEventListener('play', () => {
+      const loop = () => {
+        if (!video.paused && !video.ended) {
+          countCamFrame();
+          requestAnimationFrame(loop);
+        }
+      };
+      loop();
+    });
+
+    // Update detStat saat toggle berubah
+    document.getElementById('toggleDetect').addEventListener('change', (e) => {
+      const el = document.getElementById('detStat');
+      el.textContent = e.target.checked ? 'ON' : 'OFF';
+      el.style.color = e.target.checked ? '#22c55e' : '#64748b';
+    });
 
     // Tes Localize
     document.getElementById('testLocBtn').onclick = async () => {

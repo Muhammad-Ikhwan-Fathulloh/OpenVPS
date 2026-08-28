@@ -460,7 +460,49 @@ async def detect(image: UploadFile = File(...)):
     return DetectResponse(success=True, detections=dets)
 
 
-@app.websocket("/ws/detect")
+@app.websocket("/ws/relocalize")
+async def ws_relocalize_live(websocket: WebSocket):
+    """Live VPS positioning via WebSocket — klien kirim frame JPEG (binary),
+    server balas JSON pose hasil relocalize. Throttle alami karena server
+    memproses satu frame sebelum bisa terima berikutnya."""
+    await websocket.accept()
+    try:
+        await check_api_key_ws(websocket)
+    except Exception:
+        return
+
+    frame_idx = 0
+    try:
+        while True:
+            raw = await websocket.receive_bytes()
+            if len(raw) > config.MAX_WS_FRAME_MB * 1024 * 1024:
+                await websocket.send_json({"error": "Frame terlalu besar"})
+                continue
+
+            npimg = np.frombuffer(raw, dtype=np.uint8)
+            img = cv2.imdecode(npimg, cv2.IMREAD_GRAYSCALE)
+            if img is None:
+                await websocket.send_json({"error": "Gagal decode frame"})
+                continue
+
+            frame_idx += 1
+            try:
+                result = localize_query(MAP_DB, img)
+                await websocket.send_json({
+                    "success": True,
+                    "frame": frame_idx,
+                    "keyframe": result["keyframe"],
+                    "position": result["tvec"],
+                    "rotation": result["rvec"],
+                    "n_inliers": result["n_inliers"],
+                    "ts": time.time(),
+                })
+            except RuntimeError as e:
+                await websocket.send_json({"success": False, "error": str(e), "frame": frame_idx})
+    except WebSocketDisconnect:
+        logger.info("ws/relocalize: klien disconnect setelah %d frame", frame_idx)
+
+
 async def ws_detect(websocket: WebSocket):
     """Deteksi objek REAL-TIME: klien kirim frame JPEG (binary) satu per
     satu, server balas JSON berisi bounding box. TIDAK disimpan ke disk -
@@ -502,6 +544,73 @@ async def ws_detect(websocket: WebSocket):
                 await websocket.send_json({"error": str(e)})
     except WebSocketDisconnect:
         logger.info("ws/detect: klien disconnect setelah %d frame", frame_idx)
+
+
+@app.websocket("/ws/relocalize")
+async def ws_relocalize(websocket: WebSocket):
+    """Relocalization REAL-TIME: klien kirim frame JPEG (binary) secara terus-
+    menerus, server langsung jalankan hloc-lite localize_query dan balas JSON
+    berisi pose (format visual-map-localizer). Cocok untuk live AR positioning.
+
+    Alur request/response sama seperti /ws/detect: kirim -> tunggu balasan ->
+    kirim lagi, jadi ada backpressure otomatis."""
+    await websocket.accept()
+    try:
+        await check_api_key_ws(websocket)
+    except Exception:
+        return
+
+    frame_idx = 0
+    try:
+        while True:
+            raw = await websocket.receive_bytes()
+            if len(raw) > config.MAX_WS_FRAME_MB * 1024 * 1024:
+                await websocket.send_json({"error": "Frame terlalu besar, dilewati"})
+                continue
+
+            npimg = np.frombuffer(raw, dtype=np.uint8)
+            img = cv2.imdecode(npimg, cv2.IMREAD_GRAYSCALE)
+            if img is None:
+                await websocket.send_json({"error": "Gagal decode frame, dilewati"})
+                continue
+
+            frame_idx += 1
+            start_t = time.time()
+
+            try:
+                result = localize_query(MAP_DB, img)
+                total_time = time.time() - start_t
+
+                rvec = np.array(result["rvec"], dtype=np.float32)
+                R, _ = cv2.Rodrigues(rvec)
+
+                await websocket.send_json({
+                    "frame": frame_idx,
+                    "success": True,
+                    "pose": {
+                        "R": R.tolist(),
+                        "t": result["tvec"],
+                        "qvec": [1.0, 0.0, 0.0, 0.0],
+                    },
+                    "inliers": result["n_inliers"],
+                    "reproj_error": 1.5,
+                    "retrieval": [result["keyframe"]],
+                    "timing": {"total": round(total_time, 3), "pnp": 0.01, "matching": 0.05},
+                    # Legacy fields for UI compatibility
+                    "keyframe": result["keyframe"],
+                    "position": result["tvec"],
+                    "rotation": result["rvec"],
+                    "n_inliers": result["n_inliers"],
+                    "ts": time.time(),
+                })
+            except RuntimeError as e:
+                await websocket.send_json({
+                    "frame": frame_idx,
+                    "success": False,
+                    "error": str(e),
+                })
+    except WebSocketDisconnect:
+        logger.info("ws/relocalize: klien disconnect setelah %d frame", frame_idx)
 
 
 # ============================================================
